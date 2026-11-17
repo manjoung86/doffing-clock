@@ -109,6 +109,9 @@
 
   /* 일반 계산기 */
   .display { flex: 1; min-height: 96px; display: flex; flex-direction: column; justify-content: flex-end; text-align: right; padding: 0 8px; overflow: hidden; }
+  .display .hist { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; margin-bottom: 8px; }
+  .display .hist div { font-size: 16px; line-height: 1.7; color: var(--text-muted); overflow-wrap: anywhere; }
+  .display .hist div:first-child { margin-top: auto; }
   .display .expr { min-height: 24px; font-size: 19px; color: var(--text-muted); white-space: nowrap; overflow: hidden; }
   .display .value { font-size: 64px; font-weight: 300; line-height: 1.1; white-space: nowrap; }
   .keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
@@ -165,6 +168,7 @@
 
   <section class="view" id="view-calc" hidden>
     <div class="display num">
+      <div class="hist" id="calcHist"></div>
       <div class="expr" id="calcExpr"></div>
       <div class="value" id="calcValue">0</div>
     </div>
@@ -284,6 +288,9 @@ renderDoff();
 // tokens: [수, 연산자, 수, …], cur: 지금 치고 있는 수(문자열), done: 방금 = 을 눌렀는지
 const calc = { tokens: [], cur: '', done: false, expr: '', error: false };
 const trim = v => String(parseFloat(v.toPrecision(12)));
+const HISTORY_MAX = 20;             // 지난 계산식을 이만큼 기억한다 (앱을 껐다 켜도 남는다)
+let calcHist = [];
+try { calcHist = JSON.parse(localStorage.getItem('calc.history')) || []; } catch (e) {}
 
 function evalTokens(t) {            // 곱셈·나눗셈 먼저, 그다음 덧셈·뺄셈
   const a = t.slice();
@@ -317,6 +324,10 @@ function pressKey(k) {
     if (!c.tokens.length) return;
     const r = evalTokens(c.tokens);
     c.expr = exprText(c.tokens) + ' =';
+    if (isFinite(r) && c.tokens.length > 1) {
+      calcHist = calcHist.concat(c.expr + ' ' + withCommas(trim(r))).slice(-HISTORY_MAX);
+      try { localStorage.setItem('calc.history', JSON.stringify(calcHist)); } catch (e) {}
+    }
     c.tokens = [];
     if (!isFinite(r)) { c.cur = ''; c.error = true; }
     else { c.cur = trim(r); c.done = true; }
@@ -336,6 +347,15 @@ function renderCalc() {
   $('calcValue').textContent = text;
   $('calcValue').style.fontSize = text.length > 15 ? '30px' : text.length > 11 ? '40px' : text.length > 8 ? '52px' : '';
   $('calcExpr').textContent = c.expr || exprText(c.tokens);
+  // 방금 끝낸 계산은 아래 큰 글씨로 보이고 있으니 기록 목록에서는 뺀다
+  const shownNow = c.done && calcHist[calcHist.length - 1] === c.expr + ' ' + text;
+  const h = $('calcHist');
+  h.replaceChildren(...(shownNow ? calcHist.slice(0, -1) : calcHist).map(t => {
+    const d = document.createElement('div');
+    d.textContent = t;
+    return d;
+  }));
+  h.scrollTop = h.scrollHeight;
 }
 $('keys').addEventListener('click', e => {
   const b = e.target.closest('button');
@@ -352,6 +372,7 @@ document.querySelector('.tabs').addEventListener('click', e => {
   document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
   $('view-doff').hidden = b.dataset.view !== 'doff';
   $('view-calc').hidden = b.dataset.view !== 'calc';
+  renderCalc();
 });
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
