@@ -28,7 +28,6 @@
     --on-accent: #ffffff;
     --danger: #d03b3b;
     --key: #ffffff;
-    --key-fn: #dcdce2;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -44,7 +43,6 @@
       --on-accent: #ffffff;
       --danger: #ef6a6a;
       --key: #2a2a28;
-      --key-fn: #4a4a47;
     }
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -166,15 +164,31 @@
   .display .hist div:first-child { margin-top: auto; }
   .display .hist div:active { color: var(--text-primary); }
   .display .expr { min-height: 24px; font-size: 19px; color: var(--text-muted); white-space: nowrap; overflow: hidden; }
-  .display .value { font-size: 64px; font-weight: 300; line-height: 1.1; white-space: nowrap; }
+  .display .value { flex: none; max-height: 132px; overflow-y: auto; overflow-wrap: anywhere; font-size: 64px; font-weight: 300; line-height: 1.2; }
+  .display .value::-webkit-scrollbar { display: none; }
+  .display .pre { flex: none; min-height: 26px; font-size: 20px; color: var(--text-muted); white-space: nowrap; overflow: hidden; }
+  .display .pre.err { color: var(--danger); }
   .keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
   .keys button {
     height: clamp(54px, 9.4dvh, 78px); border-radius: 18px;
     font-size: 28px; background: var(--key); color: var(--text-primary);
   }
-  .keys button.fn { background: var(--key-fn); font-size: 24px; }
-  .keys button.op { background: var(--accent); color: var(--on-accent); font-size: 32px; }
+  .keys button.tool { height: 38px; background: none; font-size: 20px; color: var(--accent); }
+  .keys button.fn { font-size: 26px; color: var(--accent); }
+  .keys button.op { font-size: 32px; color: var(--accent); }
+  .keys button.eq { background: var(--accent); color: var(--on-accent); font-size: 32px; }
   .keys button:active { filter: brightness(0.85); }
+
+  /* 공학용 함수 창 */
+  .sheet { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(0, 0, 0, 0.45); }
+  .sheet[hidden] { display: none; }
+  .sheet .panel { width: 100%; max-width: 340px; padding: 14px; }
+  .sheet .shead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .sheet .shead span { font-size: 17px; font-weight: 700; }
+  .fgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .fgrid button { height: 44px; border-radius: 12px; background: var(--field); font-size: 19px; color: var(--accent); }
+  .fgrid button:active { filter: brightness(0.85); }
+  .sheet .fclose { width: 100%; height: 44px; margin-top: 10px; border-radius: 12px; font-size: 17px; color: var(--text-secondary); }
 
   /* 아래 탭 */
   .tabs {
@@ -188,7 +202,7 @@
 </head>
 <body>
 <main>
-  <section class="view" id="view-doff">
+  <section class="view" id="view-doff" hidden>
     <div class="card result empty" id="result">
       <div class="label">예상 도핑 시각<span class="day" id="doffDay"></span></div>
       <div class="time num">
@@ -252,27 +266,51 @@
     </template>
   </section>
 
-  <section class="view" id="view-calc" hidden>
+  <section class="view" id="view-calc">
     <div class="display num">
       <button type="button" class="hclear" id="histClear" hidden>기록 지우기</button>
       <div class="hist" id="calcHist"></div>
       <div class="expr" id="calcExpr"></div>
       <div class="value" id="calcValue">0</div>
+      <div class="pre" id="calcPre"></div>
     </div>
     <div class="keys" id="keys">
-      <button class="fn" data-k="C">C</button><button class="fn" data-k="back">⌫</button><button class="fn" data-k="%">%</button><button class="op" data-k="÷">÷</button>
+      <button class="tool" id="fnOpen">함수</button><button class="tool" data-k="^">^</button><span></span><button class="tool" data-k="back">⌫</button>
+      <button class="fn" data-k="C">C</button><button class="fn" data-k="paren">( )</button><button class="fn" data-k="%">%</button><button class="op" data-k="÷">÷</button>
       <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button><button class="op" data-k="×">×</button>
       <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button><button class="op" data-k="−">−</button>
       <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button><button class="op" data-k="+">+</button>
-      <button data-k="sign">±</button><button data-k="0">0</button><button data-k=".">.</button><button class="op" data-k="=">=</button>
+      <button data-k="0">0</button><button data-k="00">00</button><button data-k=".">.</button><button class="eq" data-k="=">=</button>
     </div>
   </section>
 </main>
 
 <nav class="tabs">
-  <button type="button" data-view="doff" class="on">도핑시계</button>
-  <button type="button" data-view="calc">계산기</button>
+  <button type="button" data-view="calc" class="on">계산기</button>
+  <button type="button" data-view="doff">도핑시계</button>
 </nav>
+
+<div class="sheet" id="fnSheet" hidden>
+  <div class="card panel">
+    <div class="shead">
+      <span>공학용 함수</span>
+      <div class="seg">
+        <button type="button" id="angDeg">도(°)</button>
+        <button type="button" id="angRad">라디안</button>
+      </div>
+    </div>
+    <div class="fgrid" id="fnKeys">
+      <button data-k="π">π</button><button data-k="e">e</button><button data-k="φ">φ</button>
+      <button data-k="log(">log</button><button data-k="ln(">ln</button><button data-k="log₂(">log₂</button>
+      <button data-k="√(">√</button><button data-k="∛(">∛</button><button data-k="abs(">|x|</button>
+      <button data-k="sin(">sin</button><button data-k="cos(">cos</button><button data-k="tan(">tan</button>
+      <button data-k="sin⁻¹(">sin⁻¹</button><button data-k="cos⁻¹(">cos⁻¹</button><button data-k="tan⁻¹(">tan⁻¹</button>
+      <button data-k="sinh(">sinh</button><button data-k="cosh(">cosh</button><button data-k="tanh(">tanh</button>
+      <button data-k="sinh⁻¹(">sinh⁻¹</button><button data-k="cosh⁻¹(">cosh⁻¹</button><button data-k="tanh⁻¹(">tanh⁻¹</button>
+    </div>
+    <button type="button" class="fclose" id="fnClose">닫기</button>
+  </div>
+</div>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -510,77 +548,187 @@ renderRuns();
 tick();
 
 // ── 일반 계산기 ──
-// tokens: [수, 연산자, 수, …], cur: 지금 치고 있는 수(문자열), done: 방금 = 을 눌렀는지
-const calc = { tokens: [], cur: '', done: false, expr: '', error: false };
+// toks: 식을 이루는 조각들 ["180000", "×", "sin(", "30", ")"], done: 방금 = 을 눌러 결과를 보여 주는 중인지
+const calc = { toks: [], done: false, expr: '', msg: '' };
 const trim = v => String(parseFloat(v.toPrecision(12)));
 const HISTORY_MAX = 20;             // 지난 계산식을 이만큼 기억한다 (앱을 껐다 켜도 남는다)
 let calcHist = [];
 try { calcHist = JSON.parse(localStorage.getItem('calc.history')) || []; } catch (e) {}
+let calcDeg = true;                 // 삼각함수의 각도 단위: 도(기본) / 라디안
+try { calcDeg = localStorage.getItem('calc.deg') !== '0'; } catch (e) {}
 
-function evalTokens(t) {            // 곱셈·나눗셈 먼저, 그다음 덧셈·뺄셈
-  const a = t.slice();
-  for (let i = 1; i < a.length;) {
-    if (a[i] === '×' || a[i] === '÷') a.splice(i - 1, 3, a[i] === '×' ? a[i - 1] * a[i + 1] : a[i - 1] / a[i + 1]);
-    else i += 2;
+const snap = v => Math.round(v * 1e15) / 1e15;   // sin(180°)에 남는 부동소수 찌꺼기를 0으로 만든다
+const toRad = x => calcDeg ? x * Math.PI / 180 : x;
+const fromRad = x => calcDeg ? x * 180 / Math.PI : x;
+const CALC_FN = {
+  'sin': x => snap(Math.sin(toRad(x))),
+  'cos': x => snap(Math.cos(toRad(x))),
+  'tan': x => snap(Math.sin(toRad(x))) / snap(Math.cos(toRad(x))),
+  'sin⁻¹': x => fromRad(Math.asin(x)),
+  'cos⁻¹': x => fromRad(Math.acos(x)),
+  'tan⁻¹': x => fromRad(Math.atan(x)),
+  'sinh': Math.sinh, 'cosh': Math.cosh, 'tanh': Math.tanh,
+  'sinh⁻¹': Math.asinh, 'cosh⁻¹': Math.acosh, 'tanh⁻¹': Math.atanh,
+  'log': Math.log10, 'ln': Math.log, 'log₂': Math.log2,
+  '√': Math.sqrt, '∛': Math.cbrt, 'abs': Math.abs,
+};
+const CALC_CONST = { 'π': Math.PI, 'e': Math.E, 'φ': (1 + Math.sqrt(5)) / 2 };
+// 식 글자를 다시 조각으로 나눌 때 쓰는 낱말들 (긴 것부터 맞춘다). 함수는 여는 괄호까지가 한 조각이다
+const CALC_WORDS = [...Object.keys(CALC_FN).map(f => f + '('), ...Object.keys(CALC_CONST), '(', ')', '%', '^', '+', '−', '×', '÷']
+  .sort((a, b) => b.length - a.length);
+
+const isNum = x => x !== undefined && /^[\d.]/.test(x);
+const isOp = x => x !== undefined && '+−×÷^'.includes(x);
+const isOpen = x => x !== undefined && x.endsWith('(');                       // ( 또는 sin( 같은 함수
+const isValEnd = x => isNum(x) || x === ')' || x === '%' || (x !== undefined && x in CALC_CONST);   // 값이 끝난 자리
+const openCount = t => t.filter(isOpen).length - t.filter(x => x === ')').length;
+const numToks = v => { const s = trim(v); return s.startsWith('-') ? ['−', s.slice(1)] : [s]; };
+
+// 식을 계산한다: 괄호·함수 → 거듭제곱 → 곱셈·나눗셈 → 덧셈·뺄셈. 닫지 않은 괄호는 닫힌 것으로 보고, 못 읽으면 NaN
+function evalTokens(t) {
+  let i = 0;
+  function expr() {
+    let v = term();
+    while (t[i] === '+' || t[i] === '−') { const op = t[i++], r = term(); v = op === '+' ? v + r : v - r; }
+    return v;
   }
-  let r = a[0];
-  for (let i = 1; i < a.length; i += 2) r = a[i] === '+' ? r + a[i + 1] : r - a[i + 1];
-  return r;
+  function term() {
+    let v = unary();
+    while (t[i] === '×' || t[i] === '÷') { const op = t[i++], r = unary(); v = op === '×' ? v * r : v / r; }
+    return v;
+  }
+  function unary() {
+    if (t[i] === '−') { i++; return -unary(); }
+    let v = primary();
+    while (t[i] === '%') { i++; v /= 100; }
+    if (t[i] === '^') { i++; v = Math.pow(v, unary()); }
+    return v;
+  }
+  function primary() {
+    const x = t[i++];
+    if (x === undefined) throw 0;
+    if (x in CALC_CONST) return CALC_CONST[x];
+    if (isOpen(x)) {
+      const v = expr();
+      if (t[i] === ')') i++; else if (i < t.length) throw 0;
+      return x === '(' ? v : CALC_FN[x.slice(0, -1)](v);
+    }
+    if (!isNum(x)) throw 0;
+    return parseFloat(x);
+  }
+  try { const v = expr(); return i === t.length ? v : NaN; } catch (e) { return NaN; }
 }
-const exprText = t => t.map(x => typeof x === 'number' ? withCommas(trim(x)) : x).join(' ');
+// 끝에 매달린 연산자와 여는 괄호를 떼어 낸, 계산할 수 있는 부분
+function ready(t) {
+  const a = t.slice();
+  while (a.length && (isOp(a[a.length - 1]) || isOpen(a[a.length - 1]))) a.pop();
+  return a;
+}
+// 조각 → 화면 글자 ("180,000 ÷ 500", 음수의 − 는 붙여 쓴다)
+function exprText(t) {
+  return t.map((x, i) => {
+    if (isNum(x)) return withCommas(x);
+    if (x !== '^' && isOp(x)) return x === '−' && (i === 0 || isOp(t[i - 1]) || isOpen(t[i - 1])) ? x : ' ' + x + ' ';
+    return x;
+  }).join('');
+}
+// 화면 글자 → 조각 (기록을 다시 불러올 때). 모르는 글자가 있으면 null
+function tokenize(text) {
+  const s = text.replace(/[\s,]/g, ''), out = [];
+  for (let i = 0; i < s.length;) {
+    const rest = s.slice(i), n = rest.match(/^\d+\.?\d*(e[+-]?\d+)?/);
+    const w = n ? n[0] : rest[0] === '-' ? '-' : CALC_WORDS.find(x => rest.startsWith(x));
+    if (!w) return null;
+    out.push(w === '-' ? '−' : w);
+    i += w.length;
+  }
+  return out;
+}
 
 function pressKey(k) {
   const c = calc;
-  if (c.error || k === 'C') { c.tokens = []; c.cur = ''; c.done = false; c.expr = ''; c.error = false; if (k === 'C') return; }
-  if (/^\d$/.test(k) || k === '.') {
-    if (c.done) { c.cur = ''; c.done = false; c.expr = ''; }
-    if (k === '.') { if (!c.cur.includes('.')) c.cur = (c.cur === '' || c.cur === '-' ? c.cur + '0' : c.cur) + '.'; }
-    else if (c.cur.replace(/\D/g, '').length < 15) c.cur = (c.cur === '0' ? '' : c.cur === '-0' ? '-' : c.cur) + k;
-  } else if (k === 'back') {
-    if (c.done) { c.cur = ''; c.done = false; c.expr = ''; }
-    else if (c.cur !== '') { c.cur = c.cur.slice(0, -1); if (c.cur === '-') c.cur = ''; }
-    else if (c.tokens.length) { c.tokens.pop(); c.cur = trim(c.tokens.pop()); }   // 연산자를 지우고 앞의 수로 돌아간다
-  } else if (k === 'sign') {
-    if (c.cur !== '') { c.cur = c.cur.startsWith('-') ? c.cur.slice(1) : '-' + c.cur; c.done = false; c.expr = ''; }
-  } else if (k === '%') {
-    if (c.cur !== '') { c.cur = trim(parseFloat(c.cur) / 100); c.done = false; c.expr = ''; }
-  } else if (k === '=') {
-    if (c.cur !== '') c.tokens.push(parseFloat(c.cur));
-    else if (c.tokens.length) c.tokens.pop();
-    if (!c.tokens.length) return;
-    const r = evalTokens(c.tokens);
-    c.expr = exprText(c.tokens) + ' =';
-    if (isFinite(r) && c.tokens.length > 1) {
-      calcHist = calcHist.concat(c.expr + ' ' + withCommas(trim(r))).slice(-HISTORY_MAX);
+  c.msg = '';
+  if (k === 'C') { c.toks = []; c.done = false; c.expr = ''; return; }
+  if (k === '=') {
+    const r = ready(c.toks);
+    if (!r.length) return;
+    const v = evalTokens(r);
+    if (!isFinite(v)) { c.msg = '오류'; return; }      // 0으로 나누기 등. 식은 그대로 두어 고칠 수 있게 한다
+    const full = r.concat(Array(openCount(r)).fill(')'));
+    c.expr = exprText(full) + ' =';
+    c.toks = numToks(v);
+    c.done = true;
+    if (full.length > 1 || full[0] in CALC_CONST) {
+      calcHist = calcHist.concat(c.expr + ' ' + exprText(c.toks)).slice(-HISTORY_MAX);
       try { localStorage.setItem('calc.history', JSON.stringify(calcHist)); } catch (e) {}
     }
-    c.tokens = [];
-    if (!isFinite(r)) { c.cur = ''; c.error = true; }
-    else { c.cur = trim(r); c.done = true; }
-  } else {                           // + − × ÷
-    if (c.cur !== '') { c.tokens.push(parseFloat(c.cur), k); c.cur = ''; }
-    else if (c.tokens.length) c.tokens[c.tokens.length - 1] = k;
-    else c.tokens.push(0, k);
+    return;
+  }
+  if (k === 'back') {
+    if (c.done) { c.toks = tokenize(c.expr.slice(0, -2)) || []; c.done = false; c.expr = ''; return; }   // 결과에서 지우면 방금 식으로 돌아간다
+    const L = c.toks[c.toks.length - 1];
+    if (isNum(L) && L.length > 1) c.toks[c.toks.length - 1] = L.slice(0, -1);
+    else c.toks.pop();
+    return;
+  }
+  // 방금 = 을 눌렀으면 수·상수·함수는 새 식으로 시작하고, 연산자·괄호·% 는 결과에 이어 붙인다
+  if (c.done) {
     c.done = false; c.expr = '';
+    if (/^[\d.]/.test(k) || k in CALC_CONST || (k !== '(' && k.endsWith('('))) c.toks = [];
+  }
+  const t = c.toks, L = t[t.length - 1];
+  if (/^\d+$/.test(k)) {              // 0~9, 00
+    for (const d of k) {
+      const last = t[t.length - 1];
+      if (isNum(last)) { if (last.replace(/\D/g, '').length < 15) t[t.length - 1] = last === '0' ? d : last + d; }
+      else { if (isValEnd(last)) t.push('×'); t.push(d); }
+    }
+  } else if (k === '.') {
+    if (isNum(L)) { if (!L.includes('.')) t[t.length - 1] = L + '.'; }
+    else { if (isValEnd(L)) t.push('×'); t.push('0.'); }
+  } else if (k === 'paren') {         // 괄호 키 하나로: 열린 괄호 안에서 값이 끝났으면 닫고, 아니면 연다
+    if (openCount(t) > 0 && isValEnd(L)) t.push(')');
+    else { if (isValEnd(L)) t.push('×'); t.push('('); }
+  } else if (k in CALC_CONST || k.endsWith('(')) {   // π e φ, sin( 같은 함수
+    if (isValEnd(L)) t.push('×');
+    t.push(k);
+  } else if (k === '%') {
+    if (isValEnd(L)) t.push('%');
+  } else {                            // + − × ÷ ^
+    if (isValEnd(L)) t.push(k);
+    else if (k === '−' && (L === undefined || isOpen(L) || L === '×' || L === '÷' || L === '^')) t.push(k);   // 음수
+    else if (L === undefined) t.push('0', k);
+    else if (!isOpen(L)) {            // 연산자를 바꿔 누른 것
+      while (isOp(t[t.length - 1])) t.pop();
+      if (isValEnd(t[t.length - 1])) t.push(k);
+    }
   }
 }
 
 // 기록 한 줄("180,000 ÷ 500 = 360")의 식을 다시 불러와 이어서 고칠 수 있게 한다
 function loadHistory(line) {
-  const parts = line.split(' = ')[0].split(' ').map((x, i) => i % 2 ? x : parseNum(x));
-  calc.cur = trim(parts.pop());
-  calc.tokens = parts;
-  calc.done = false; calc.expr = ''; calc.error = false;
+  const t = tokenize(line.split(' = ')[0]);
+  if (!t) return;
+  calc.toks = t;
+  calc.done = false; calc.expr = ''; calc.msg = '';
 }
 
 function renderCalc() {
   const c = calc;
-  let shown = c.cur;
-  if (shown === '') shown = c.tokens.length ? trim(c.tokens[c.tokens.length - 2]) : '0';
-  const text = c.error ? '오류' : withCommas(shown);
-  $('calcValue').textContent = text;
-  $('calcValue').style.fontSize = text.length > 15 ? '30px' : text.length > 11 ? '40px' : text.length > 8 ? '52px' : '';
-  $('calcExpr').textContent = c.expr || exprText(c.tokens);
+  const text = exprText(c.toks) || '0';
+  const v = $('calcValue');
+  v.textContent = text;
+  v.style.fontSize = text.length > 22 ? '24px' : text.length > 15 ? '30px' : text.length > 11 ? '40px' : text.length > 8 ? '52px' : '';
+  v.scrollTop = v.scrollHeight;
+  $('calcExpr').textContent = c.expr;
+  // 치는 동안에는 지금까지의 답을 아래에 미리 보여 준다
+  let pre = c.msg;
+  if (!pre && !c.done) {
+    const r = ready(c.toks);
+    if (r.length > 1 || r[0] in CALC_CONST) { const x = evalTokens(r); if (isFinite(x)) pre = '= ' + exprText(numToks(x)); }
+  }
+  $('calcPre').textContent = pre;
+  $('calcPre').classList.toggle('err', !!c.msg);
   // 방금 끝낸 계산은 아래 큰 글씨로 보이고 있으니 기록 목록에서는 뺀다
   const shownNow = c.done && calcHist[calcHist.length - 1] === c.expr + ' ' + text;
   const h = $('calcHist');
@@ -592,12 +740,37 @@ function renderCalc() {
   h.scrollTop = h.scrollHeight;
   $('histClear').hidden = !calcHist.length;
 }
+function renderAngle() {
+  $('angDeg').classList.toggle('on', calcDeg);
+  $('angRad').classList.toggle('on', !calcDeg);
+}
 $('keys').addEventListener('click', e => {
   const b = e.target.closest('button');
   if (!b) return;
+  if (b.id === 'fnOpen') { $('fnSheet').hidden = false; return; }
   pressKey(b.dataset.k);
   renderCalc();
 });
+
+// 공학용 함수 창: 고르면 식에 넣고 닫는다. 바깥을 눌러도 닫힌다
+$('fnKeys').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  pressKey(b.dataset.k);
+  $('fnSheet').hidden = true;
+  renderCalc();
+});
+$('fnSheet').addEventListener('click', e => {
+  if (e.target === e.currentTarget || e.target.id === 'fnClose') $('fnSheet').hidden = true;
+});
+function setDeg(on) {
+  calcDeg = on;
+  try { localStorage.setItem('calc.deg', on ? '1' : '0'); } catch (e) {}
+  renderAngle();
+  renderCalc();
+}
+$('angDeg').addEventListener('click', () => setDeg(true));
+$('angRad').addEventListener('click', () => setDeg(false));
 
 $('calcHist').addEventListener('click', e => {
   if (e.target === e.currentTarget) return;
@@ -611,6 +784,8 @@ $('histClear').addEventListener('click', () => {
   try { localStorage.removeItem('calc.history'); } catch (e) {}
   renderCalc();
 });
+renderAngle();
+renderCalc();
 
 // ── 탭 ──
 document.querySelector('.tabs').addEventListener('click', e => {
