@@ -82,8 +82,8 @@
   .run .rend { font-size: clamp(19px, 6.4vw, 24px); font-weight: 600; letter-spacing: -0.5px; white-space: nowrap; }
   .run .rleft { font-size: clamp(20px, 6.9vw, 26px); font-weight: 700; letter-spacing: -0.5px; white-space: nowrap; color: var(--accent); }
   .run.soon .rleft { color: var(--danger); }
-  .run .rbot { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-  .run .rinfo { flex: 1; min-width: 0; font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .run .rbot { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 8px; }
+  .run .rinfo { flex: 1 0 100%; min-width: 0; font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .run .rbot button { flex: none; height: 34px; padding: 0 12px; border-radius: 9px; background: var(--key-face); box-shadow: var(--raise-sm); font-size: 14px; color: var(--text-secondary); }
   .run .ralarm:not(.sent) { background: var(--accent-face); color: var(--on-accent); font-weight: 600; }
   .run.s0 { box-shadow: inset 0 0 0 2px var(--accent), var(--card-shadow); margin-bottom: 2px; }
@@ -193,6 +193,17 @@
   .fgrid button:active { transform: translateY(1px); filter: brightness(0.94); }
   .sheet .fclose { width: 100%; height: 44px; margin-top: 10px; border-radius: 12px; font-size: 17px; color: var(--text-secondary); }
 
+  /* 중량 점검 창 (숫자 키보드에 가리지 않게 위쪽에 띄운다) */
+  .sheet.top { align-items: flex-start; padding-top: calc(env(safe-area-inset-top) + 40px); }
+  .sheet .row .name { width: 68px; }
+  .chkinfo { margin: 0 0 6px; font-size: 14px; color: var(--text-secondary); }
+  .chkhint { margin: 8px 0 0; font-size: 13px; color: var(--text-muted); }
+  .chkout { margin-top: 10px; min-height: 46px; white-space: pre-line; font-size: 16px; font-weight: 600; line-height: 1.45; }
+  .chkout.warn { color: var(--danger); }
+  .chkbtns { display: flex; gap: 8px; margin-top: 12px; }
+  .chkbtns button { flex: 1; height: 48px; border-radius: 14px; font-size: 17px; }
+  .chkbtns .cancel { background: var(--key-face); box-shadow: var(--raise-sm); color: var(--text-secondary); }
+
   /* 아래 탭 */
   /* 화면 위에 떠 있는 유리 캡슐. 도핑시계 목록은 이 밑으로 지나간다 */
   .tabs {
@@ -265,6 +276,7 @@
         <div class="rbot">
           <span class="rinfo num"></span>
           <button type="button" class="ralarm"></button>
+          <button type="button" class="rchk">중량 점검</button>
           <button type="button" class="rdone">완료</button>
         </div>
       </div>
@@ -294,6 +306,27 @@
   <button type="button" data-view="calc" class="on">계산기</button>
   <button type="button" data-view="doff">도핑시계</button>
 </nav>
+
+<div class="sheet top" id="chkSheet" hidden>
+  <div class="card panel">
+    <div class="shead"><span id="chkTitle">중량 점검</span></div>
+    <p class="chkinfo num" id="chkInfo"></p>
+    <label class="row">
+      <span class="name">잰 무게</span>
+      <input type="text" id="chkW" inputmode="decimal" autocomplete="off" placeholder="0">
+    </label>
+    <label class="row">
+      <span class="name">목표 무게</span>
+      <input type="text" id="chkT" inputmode="decimal" autocomplete="off" placeholder="0">
+    </label>
+    <p class="chkhint">실을 떼어낼 때 이 창을 엽니다. 두 무게는 같은 단위로.</p>
+    <div class="chkout num" id="chkOut"></div>
+    <div class="chkbtns">
+      <button type="button" class="cancel" id="chkCancel">취소</button>
+      <button type="button" class="go" id="chkApply" disabled>적용</button>
+    </div>
+  </div>
+</div>
 
 <div class="sheet" id="fnSheet" hidden>
   <div class="card panel">
@@ -443,7 +476,7 @@ function renderRuns() {
     el.classList.add('s' + Math.min(i, 3));   // 임박한 맨 위만 크게, 뒤로 갈수록 작게
     el.classList.toggle('open', r === openRun);
     el.querySelector('.rname').textContent = r.name;
-    el.querySelector('.rinfo').textContent = r.len + ' m · ' + hm(new Date(r.startMs)) + ' 시작';
+    el.querySelector('.rinfo').textContent = r.len + ' m · ' + hm(new Date(r.startMs)) + ' 시작' + (r.endMs0 ? ' · 중량 보정 ' + shiftText(r.endMs0, r.endMs) : '');
     return { el, r };
   });
   $('runList').replaceChildren(...cards.map(c => c.el));
@@ -536,6 +569,8 @@ $('runList').addEventListener('click', e => {
     saveRuns();
     tick();
     location.href = alarmUrl(at);
+  } else if (e.target.closest('.rchk')) {
+    openCheck(r);
   } else if (e.target.closest('.rdone')) {
     if (!confirm((r.name ? '[' + r.name + ']' : '이 롤을') + ' 목록에서 지울까요?')) return;
     runs = runs.filter(x => x !== r);
@@ -551,6 +586,70 @@ document.addEventListener('visibilitychange', tick);
 renderMachines();
 renderRuns();
 tick();
+
+// ── 중량 점검 ──
+// 감기는 중에 한 추를 떼어 잰 무게로, 그 호기 전체의 도핑 시각을 다시 잡는다.
+// 지금까지 (떼어낸 시각 − 시작) 동안 잰 무게만큼 감겼으니, 목표 무게까지는 그 비율대로 걸린다: 시작 + 가동 시간 × 목표 ÷ 잰 무게.
+// 나머지 추는 계속 감기므로 떼어 놓은 시간은 더하지 않는다. 지관 무게는 현장에서 감안해 재므로 앱은 빼지 않는다
+let chk = null;                     // 점검 중인 롤과 실을 떼어낸 시각 { r, atMs }
+function minOf(ms) { return Math.floor(ms / 60000); }   // 함수 선언으로 둔다 (앱을 열 때 목록을 그리면서 먼저 불린다)
+function shiftText(fromMs, toMs) {  // "7분 앞당김" / "3분 늦춤" / "그대로" (화면에 보이는 시:분 기준)
+  const d = minOf(toMs) - minOf(fromMs);
+  return d === 0 ? '그대로' : Math.abs(d) + '분 ' + (d < 0 ? '앞당김' : '늦춤');
+}
+function openCheck(r) {
+  chk = { r, atMs: Date.now() };
+  let saved = '';
+  try { saved = localStorage.getItem('doff.target') || ''; } catch (e) {}
+  $('chkTitle').textContent = (r.name ? '[' + r.name + '] ' : '') + '중량 점검';
+  $('chkInfo').textContent = hm(new Date(chk.atMs)) + ' 에 떼어냄 · 가동 ' + durText(Math.max(0, Math.round((chk.atMs - r.startMs) / 60000)) * 60);
+  $('chkW').value = '';
+  $('chkT').value = r.target || saved;   // 목표 무게는 마지막에 쓴 값을 기억한다
+  renderCheck();
+  $('chkSheet').hidden = false;
+  $('chkW').focus();
+}
+function closeCheck() {
+  if (document.activeElement) document.activeElement.blur();
+  $('chkSheet').hidden = true;
+  chk = null;
+}
+// 넣은 값으로 본 새 도핑 시각 (값이 모자라면 null)
+function checkResult() {
+  const w = parseNum($('chkW').value), t = parseNum($('chkT').value), el = chk.atMs - chk.r.startMs;
+  if (!(w > 0) || !(t > 0) || !(el > 0)) return null;
+  return { w, t, endMs: Math.round(chk.r.startMs + el * t / w) };
+}
+function renderCheck() {
+  const res = checkResult(), out = $('chkOut'), r = chk.r;
+  $('chkApply').disabled = !res;
+  out.classList.remove('warn');
+  if (!res) { out.textContent = chk.atMs > r.startMs ? '잰 무게와 목표 무게를 넣으세요' : '가동을 시작한 뒤에 점검할 수 있습니다'; return; }
+  // 표기대로라면 이 시각에 나왔어야 할 무게와 견준 차이 (처음 계산한 도핑 시각 기준)
+  const pct = (res.w * ((r.endMs0 || r.endMs) - r.startMs) / (res.t * (chk.atMs - r.startMs)) - 1) * 100;
+  out.textContent = '도핑 ' + hm(new Date(r.endMs)) + ' → ' + hm(new Date(res.endMs)) + ' (' + shiftText(r.endMs, res.endMs) + ')\n'
+    + '표기보다 ' + Math.abs(pct).toFixed(1) + '% ' + (pct >= 0 ? '무거움' : '가벼움');
+  if (Math.abs(pct) > 10) { out.classList.add('warn'); out.textContent += '\n차이가 큽니다. 숫자를 확인하세요.'; }
+}
+for (const id of ['chkW', 'chkT']) $(id).addEventListener('input', () => { formatField($(id)); renderCheck(); });
+$('chkCancel').addEventListener('click', closeCheck);
+$('chkSheet').addEventListener('click', e => { if (e.target === e.currentTarget) closeCheck(); });
+$('chkApply').addEventListener('click', () => {
+  const res = checkResult();
+  if (!res) return;
+  const r = chk.r, hadAlarm = r.alarm;
+  if (!r.endMs0) r.endMs0 = r.endMs;                  // 표기대로 계산한 처음 도핑 시각은 남겨 둔다
+  (r.checks = r.checks || []).push({ atMs: chk.atMs, w: res.w, target: res.t, fromMs: r.endMs, toMs: res.endMs });   // 나중에 MES로 보낼 기록
+  r.endMs = res.endMs;
+  r.target = $('chkT').value;
+  r.alarm = false;                                    // 알람 시각이 달라졌으니 다시 맞추게 한다
+  try { localStorage.setItem('doff.target', r.target); } catch (e) {}
+  saveRuns();
+  closeCheck();
+  openRun = r;
+  renderRuns();
+  if (hadAlarm) alert('도핑 시각이 바뀌었습니다. 먼저 맞춘 알람은 시계 앱에서 지우고, 알람을 새로 맞춰 주세요.');
+});
 
 // ── 일반 계산기 ──
 // toks: 식을 이루는 낱자들. 숫자는 한 글자씩 둔다 ["1", "8", "0", "×", "sin(", "3", "0", ")"] (커서를 숫자 사이에도 둘 수 있게)
