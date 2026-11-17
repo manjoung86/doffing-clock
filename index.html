@@ -75,24 +75,22 @@
 
   /* 도핑시계 */
   #view-doff { overflow-y: auto; }
-  #runList { flex: none; display: flex; flex-direction: column; gap: 12px; }
-  #runList:empty { display: none; }
-  .run { padding: 12px 16px 14px; }
+  .sect { flex: none; margin: 6px 4px -4px; font-size: 15px; font-weight: 600; color: var(--text-secondary); }
+  #runList { flex: none; display: flex; flex-direction: column; gap: 10px; }
+  #runList:empty::after { content: "시작을 누르면 여기에 도핑이 임박한 순서로 표시됩니다."; padding: 2px 4px; font-size: 14px; color: var(--text-muted); }
+  .run { padding: 10px 14px 12px; }
   .run:first-child { box-shadow: inset 0 0 0 2px var(--accent); }
-  .run .rhead { display: flex; align-items: baseline; gap: 10px; }
-  .run .rname { font-size: 18px; font-weight: 700; }
-  .run .rinfo { margin-left: auto; font-size: 13px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .run .rnums { display: flex; margin-top: 8px; }
-  .run .rnums > div { flex: 1; min-width: 0; }
-  .run .cap { display: block; font-size: 13px; color: var(--text-secondary); }
-  .run .rend, .run .rleft { font-size: 30px; font-weight: 700; letter-spacing: -0.5px; }
-  .run .rleft { color: var(--accent); }
+  .run .rtop { display: flex; align-items: flex-end; gap: 10px; }
+  .run .rname { width: 56px; flex: none; padding-bottom: 3px; font-size: 19px; font-weight: 700; }
+  .run .rtop > div { flex: 1; min-width: 0; }
+  .run .cap { display: block; font-size: 12px; color: var(--text-secondary); }
+  .run .rend { font-size: 24px; font-weight: 600; letter-spacing: -0.5px; }
+  .run .rleft { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; color: var(--accent); }
   .run.soon .rleft { color: var(--danger); }
-  .run .ract { display: flex; gap: 8px; margin-top: 10px; }
-  .run .ract button { height: 40px; padding: 0 14px; border-radius: 10px; background: var(--field); font-size: 15px; color: var(--text-secondary); }
-  .run .ralarm { flex: 1; }
+  .run .rbot { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .run .rinfo { flex: 1; min-width: 0; font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .run .rbot button { flex: none; height: 34px; padding: 0 12px; border-radius: 9px; background: var(--field); font-size: 14px; color: var(--text-secondary); }
   .run .ralarm:not(.sent) { background: var(--accent); color: var(--on-accent); font-weight: 600; }
-  .run .rdone { margin-left: auto; }
 
   .result { flex: none; padding: 12px 20px 14px; text-align: center; }
   .result .label { font-size: 15px; color: var(--text-secondary); }
@@ -146,6 +144,7 @@
 
   /* 일반 계산기 */
   .display { flex: 1; min-height: 96px; display: flex; flex-direction: column; justify-content: flex-end; text-align: right; padding: 0 8px; overflow: hidden; }
+  .display .hclear { align-self: flex-start; flex: none; padding: 4px 10px; margin: 0 0 4px -4px; border-radius: 8px; font-size: 14px; color: var(--text-muted); }
   .display .hist { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; margin-bottom: 8px; }
   .display .hist div { font-size: 16px; line-height: 1.7; color: var(--text-muted); overflow-wrap: anywhere; }
   .display .hist div:first-child { margin-top: auto; }
@@ -174,7 +173,6 @@
 <body>
 <main>
   <section class="view" id="view-doff">
-    <div id="runList"></div>
     <div class="card result empty" id="result">
       <div class="label">예상 도핑 시각<span class="day" id="doffDay"></span></div>
       <div class="time num">
@@ -211,6 +209,8 @@
       </div>
     </div>
     <button type="button" class="go" id="goBtn" disabled>시작</button>
+    <div class="sect">가동 중</div>
+    <div id="runList"></div>
     <details class="card help">
       <summary>5분 전 알람 설정 방법 (처음 한 번)</summary>
       <ol>
@@ -219,16 +219,17 @@
         <li>파란 <b>시간</b> 글자를 길게 눌러 <b>단축어 입력</b>을 고릅니다.</li>
         <li>맨 위 이름을 눌러 <b>도핑알람</b>으로 바꾸고 완료를 누릅니다.</li>
       </ol>
-      <p>그다음부터는 목록의 <b>5분 전 알람</b> 버튼을 누르면 시계 앱에 알람이 생깁니다. 완료로 목록에서 지워도 맞춰 둔 알람은 남으니 시계 앱에서 지워 주세요.</p>
+      <p>그다음부터는 가동 목록의 <b>알람 18:35</b> 같은 버튼(도핑 5분 전 시각)을 누르면 시계 앱에 알람이 생깁니다. 완료로 목록에서 지워도 맞춰 둔 알람은 남으니 시계 앱에서 지워 주세요.</p>
     </details>
     <template id="runTpl">
       <div class="card run">
-        <div class="rhead"><span class="rname"></span><span class="rinfo num"></span></div>
-        <div class="rnums num">
+        <div class="rtop num">
+          <span class="rname"></span>
           <div><span class="cap cend"></span><span class="rend"></span></div>
           <div><span class="cap cleft"></span><span class="rleft"></span></div>
         </div>
-        <div class="ract">
+        <div class="rbot">
+          <span class="rinfo num"></span>
           <button type="button" class="ralarm"></button>
           <button type="button" class="rdone">완료</button>
         </div>
@@ -238,6 +239,7 @@
 
   <section class="view" id="view-calc" hidden>
     <div class="display num">
+      <button type="button" class="hclear" id="histClear" hidden>기록 지우기</button>
       <div class="hist" id="calcHist"></div>
       <div class="expr" id="calcExpr"></div>
       <div class="value" id="calcValue">0</div>
@@ -285,12 +287,13 @@ function formatField(el) {
 
 // ── 도핑시계 ──
 let manualStart = false;
-let runs = [];                      // "시작"을 누른 롤들 { id, name, len, spd, startMs, endMs, alarm } — 앱을 닫아도 남는다
+let runs = [];                      // "시작"을 누른 롤들 { name, len, spd, startMs, endMs, alarm } — 앱을 닫아도 남는다
+let cards = [];                     // 화면에 그린 카드와 그 롤의 짝 [{ el, r }]
 function saveRuns() { try { localStorage.setItem('doff.runs', JSON.stringify(runs)); } catch (e) {} }
 try {
   runs = JSON.parse(localStorage.getItem('doff.runs')) || [];
   const old = JSON.parse(localStorage.getItem('doff.run'));   // 롤 하나만 잡던 이전 판의 저장값을 옮긴다
-  if (old) { runs.push({ id: old.startMs, name: '', ...old }); saveRuns(); localStorage.removeItem('doff.run'); }
+  if (old) { runs.push({ name: '', ...old }); saveRuns(); localStorage.removeItem('doff.run'); }
 } catch (e) {}
 
 // 호기 고르기: 번호(2~6)를 누르면 그 번호의 호기들이 아래로 펼쳐지고, 고르면 다시 한 줄로 접힌다
@@ -376,18 +379,17 @@ function renderPreview(now) {
 // 돌아가는 롤 목록: 도핑이 빠른 것부터. 카드는 목록이 바뀔 때만 다시 만들고, 숫자는 매초 tickRuns가 고친다
 function renderRuns() {
   runs.sort((a, b) => a.endMs - b.endMs);
-  $('runList').replaceChildren(...runs.map(r => {
+  cards = runs.map(r => {
     const el = $('runTpl').content.firstElementChild.cloneNode(true);
-    el.dataset.id = r.id;
     el.querySelector('.rname').textContent = r.name;
-    el.querySelector('.rinfo').textContent = r.len + ' m · ' + r.spd + ' m/min · ' + hm(new Date(r.startMs)) + ' 시작';
-    return el;
-  }));
+    el.querySelector('.rinfo').textContent = r.len + ' m · ' + hm(new Date(r.startMs)) + ' 시작';
+    return { el, r };
+  });
+  $('runList').replaceChildren(...cards.map(c => c.el));
   tickRuns(new Date());
 }
 function tickRuns(now) {
-  for (const el of $('runList').children) {
-    const r = runs.find(x => String(x.id) === el.dataset.id);
+  for (const { el, r } of cards) {
     const end = new Date(r.endMs), left = Math.round((r.endMs - now) / 1000), day = dayText(dayDiff(now, end));
     el.querySelector('.cend').textContent = '도핑 시각' + (day ? ' · ' + day : '');
     el.querySelector('.rend').textContent = hms(end);
@@ -397,7 +399,7 @@ function tickRuns(now) {
     const at = alarmTime(r, now), b = el.querySelector('.ralarm');
     b.hidden = !at;
     if (at) {
-      b.textContent = r.alarm ? hm(at) + ' 알람 요청함' : ALARM_LEAD_MIN + '분 전 알람 · ' + hm(at);
+      b.textContent = r.alarm ? hm(at) + ' 요청함' : '알람 ' + hm(at);
       b.classList.toggle('sent', !!r.alarm);
     }
   }
@@ -452,7 +454,7 @@ $('goBtn').addEventListener('click', () => {
   if (same && !confirm('[' + name + '] 이미 돌아가는 목록에 있습니다. 새 롤로 바꿀까요?')) return;
   const end = calcDoff(parseNum($('len').value), parseNum($('spd').value), start).end;
   runs = runs.filter(r => r !== same);
-  runs.push({ id: Date.now(), name, len: $('len').value, spd: $('spd').value, startMs: start.getTime(), endMs: end.getTime() });
+  runs.push({ name, len: $('len').value, spd: $('spd').value, startMs: start.getTime(), endMs: end.getTime() });
   saveRuns();
   selMc = openGroup = '';
   renderMachines();
@@ -460,12 +462,11 @@ $('goBtn').addEventListener('click', () => {
   if (document.activeElement) document.activeElement.blur();
   renderRuns();                     // 카드를 먼저 새로 만든다 (setManual의 tick이 지워진 롤의 옛 카드를 만지지 않게)
   setManual(false);
-  $('view-doff').scrollTop = 0;
 });
 $('runList').addEventListener('click', e => {
   const card = e.target.closest('.run');
   if (!card) return;
-  const r = runs.find(x => String(x.id) === card.dataset.id);
+  const r = cards.find(c => c.el === card).r;
   if (e.target.closest('.ralarm')) {
     const at = alarmTime(r, new Date());
     if (!at) return;
@@ -567,6 +568,7 @@ function renderCalc() {
     return d;
   }));
   h.scrollTop = h.scrollHeight;
+  $('histClear').hidden = !calcHist.length;
 }
 $('keys').addEventListener('click', e => {
   const b = e.target.closest('button');
@@ -578,6 +580,13 @@ $('keys').addEventListener('click', e => {
 $('calcHist').addEventListener('click', e => {
   if (e.target === e.currentTarget) return;
   loadHistory(e.target.textContent);
+  renderCalc();
+});
+
+$('histClear').addEventListener('click', () => {
+  if (!confirm('계산 기록을 모두 지울까요?')) return;
+  calcHist = [];
+  try { localStorage.removeItem('calc.history'); } catch (e) {}
   renderCalc();
 });
 
