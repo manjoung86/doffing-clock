@@ -75,19 +75,35 @@
 
   /* 도핑시계 */
   #view-doff { overflow-y: auto; }
-  .result { padding: 14px 20px 16px; text-align: center; }
+  #runList { flex: none; display: flex; flex-direction: column; gap: 12px; }
+  #runList:empty { display: none; }
+  .run { padding: 12px 16px 14px; }
+  .run:first-child { box-shadow: inset 0 0 0 2px var(--accent); }
+  .run .rhead { display: flex; align-items: baseline; gap: 10px; }
+  .run .rname { font-size: 18px; font-weight: 700; }
+  .run .rinfo { margin-left: auto; font-size: 13px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .run .rnums { display: flex; margin-top: 8px; }
+  .run .rnums > div { flex: 1; min-width: 0; }
+  .run .cap { display: block; font-size: 13px; color: var(--text-secondary); }
+  .run .rend, .run .rleft { font-size: 30px; font-weight: 700; letter-spacing: -0.5px; }
+  .run .rleft { color: var(--accent); }
+  .run.soon .rleft { color: var(--danger); }
+  .run .ract { display: flex; gap: 8px; margin-top: 10px; }
+  .run .ract button { height: 40px; padding: 0 14px; border-radius: 10px; background: var(--field); font-size: 15px; color: var(--text-secondary); }
+  .run .ralarm { flex: 1; }
+  .run .ralarm:not(.sent) { background: var(--accent); color: var(--on-accent); font-weight: 600; }
+  .run .rdone { margin-left: auto; }
+
+  .result { flex: none; padding: 12px 20px 14px; text-align: center; }
   .result .label { font-size: 15px; color: var(--text-secondary); }
   .result .time { margin-top: 2px; display: flex; justify-content: center; align-items: baseline; gap: 8px; }
   .result .day { margin-left: 8px; font-size: 17px; font-weight: 700; color: var(--accent); }
-  .result .hm { font-size: 84px; font-weight: 700; line-height: 1.05; letter-spacing: -2px; }
-  .result .sec { font-size: 26px; font-weight: 600; color: var(--text-muted); }
+  .result .hm { font-size: 64px; font-weight: 700; line-height: 1.05; letter-spacing: -1.5px; }
+  .result .sec { font-size: 24px; font-weight: 600; color: var(--text-muted); }
   .result.empty .hm { color: var(--text-muted); }
-  .result .sub { margin-top: 6px; font-size: 16px; color: var(--text-secondary); }
-  .result.fixed { box-shadow: inset 0 0 0 2px var(--accent); }
-  .result.fixed .label { color: var(--accent); font-weight: 700; }
-  .result.over .sub { color: var(--danger); font-weight: 600; }
+  .result .sub { margin-top: 4px; font-size: 16px; color: var(--text-secondary); }
 
-  .form { padding: 0 16px; }
+  .form { flex: none; padding: 0 16px; }
   .row { display: flex; align-items: center; gap: 10px; min-height: 56px; }
   .row + .row { border-top: 1px solid var(--line); }
   .row .name { width: 52px; flex: none; font-size: 17px; color: var(--text-secondary); }
@@ -99,7 +115,6 @@
     outline: none; -webkit-user-select: text; user-select: text;
   }
   .row input[type="text"]:focus { box-shadow: 0 0 0 2px var(--accent); }
-  .row input[type="text"]:disabled { background: transparent; opacity: 1; -webkit-text-fill-color: var(--text-primary); }
   .row .unit { width: 50px; flex: none; font-size: 15px; color: var(--text-muted); }
   .row .start { flex: 1; min-width: 0; text-align: right; font-size: 22px; font-weight: 600; }
   .row input[type="time"] {
@@ -112,10 +127,13 @@
   .seg { flex: none; display: flex; background: var(--field); border-radius: 10px; padding: 3px; }
   .seg button { font-size: 15px; padding: 7px 13px; border-radius: 8px; color: var(--text-secondary); }
   .seg button.on { background: var(--accent); color: var(--on-accent); font-weight: 600; }
-  .seg[hidden] { display: none; }
   .go { flex: none; height: 54px; border-radius: 16px; background: var(--accent); color: var(--on-accent); font-size: 20px; font-weight: 700; }
   .go:disabled { opacity: 0.4; }
-  .go.reset { background: var(--card); color: var(--text-secondary); font-size: 17px; font-weight: 600; }
+  .help { flex: none; padding: 0 16px; font-size: 15px; color: var(--text-secondary); }
+  .help summary { padding: 14px 0; }
+  .help ol { margin: 0; padding: 0 0 6px 20px; line-height: 1.6; }
+  .help p { margin: 0; padding: 6px 0 14px; line-height: 1.6; }
+  .help b { color: var(--text-primary); }
 
   /* 일반 계산기 */
   .display { flex: 1; min-height: 96px; display: flex; flex-direction: column; justify-content: flex-end; text-align: right; padding: 0 8px; overflow: hidden; }
@@ -147,14 +165,20 @@
 <body>
 <main>
   <section class="view" id="view-doff">
+    <div id="runList"></div>
     <div class="card result empty" id="result">
-      <div class="label"><span id="doffLabel">예상 도핑 시각</span><span class="day" id="doffDay"></span></div>
+      <div class="label">예상 도핑 시각<span class="day" id="doffDay"></span></div>
       <div class="time num">
         <span class="hm" id="doffHM">--:--</span><span class="sec" id="doffSec"></span>
       </div>
       <div class="sub num" id="doffSub">길이를 넣으세요</div>
     </div>
     <div class="card form">
+      <label class="row">
+        <span class="name">호기</span>
+        <input type="text" id="mc" inputmode="numeric" autocomplete="off" maxlength="4" placeholder="번호">
+        <span class="unit">호기</span>
+      </label>
       <label class="row">
         <span class="name">길이</span>
         <input type="text" id="len" inputmode="decimal" autocomplete="off" placeholder="0">
@@ -169,13 +193,36 @@
         <span class="name">시작</span>
         <span class="start num" id="nowText"></span>
         <input type="time" id="startTime" hidden>
-        <div class="seg" id="seg">
+        <div class="seg">
           <button type="button" id="modeNow" class="on">지금</button>
           <button type="button" id="modeSet">직접</button>
         </div>
       </div>
     </div>
     <button type="button" class="go" id="goBtn" disabled>시작</button>
+    <details class="card help">
+      <summary>5분 전 알람 설정 방법 (처음 한 번)</summary>
+      <ol>
+        <li>아이폰 <b>단축어</b> 앱을 열고 오른쪽 위 <b>+</b> 를 누릅니다.</li>
+        <li>동작 검색에 <b>알람</b>을 넣고 <b>알람 생성</b>을 고릅니다. (없으면 알람 추가)</li>
+        <li>파란 <b>시간</b> 글자를 길게 눌러 <b>단축어 입력</b>을 고릅니다.</li>
+        <li>맨 위 이름을 눌러 <b>도핑알람</b>으로 바꾸고 완료를 누릅니다.</li>
+      </ol>
+      <p>그다음부터는 목록의 <b>5분 전 알람</b> 버튼을 누르면 시계 앱에 알람이 생깁니다. 완료로 목록에서 지워도 맞춰 둔 알람은 남으니 시계 앱에서 지워 주세요.</p>
+    </details>
+    <template id="runTpl">
+      <div class="card run">
+        <div class="rhead"><span class="rname"></span><span class="rinfo num"></span></div>
+        <div class="rnums num">
+          <div><span class="cap cend"></span><span class="rend"></span></div>
+          <div><span class="cap cleft"></span><span class="rleft"></span></div>
+        </div>
+        <div class="ract">
+          <button type="button" class="ralarm"></button>
+          <button type="button" class="rdone">완료</button>
+        </div>
+      </div>
+    </template>
   </section>
 
   <section class="view" id="view-calc" hidden>
@@ -227,8 +274,13 @@ function formatField(el) {
 
 // ── 도핑시계 ──
 let manualStart = false;
-let run = null;                     // "시작"으로 고정한 롤 { len, spd, startMs, endMs } — 앱을 닫아도 남는다
-try { run = JSON.parse(localStorage.getItem('doff.run')); } catch (e) {}
+let runs = [];                      // "시작"을 누른 롤들 { id, name, len, spd, startMs, endMs, alarm } — 앱을 닫아도 남는다
+function saveRuns() { try { localStorage.setItem('doff.runs', JSON.stringify(runs)); } catch (e) {} }
+try {
+  runs = JSON.parse(localStorage.getItem('doff.runs')) || [];
+  const old = JSON.parse(localStorage.getItem('doff.run'));   // 롤 하나만 잡던 이전 판의 저장값을 옮긴다
+  if (old) { runs.push({ id: old.startMs, name: '', ...old }); saveRuns(); localStorage.removeItem('doff.run'); }
+} catch (e) {}
 
 // 길이(m), 속도(m/min), 시작 시각 → 소요 시간(초)과 도핑 시각
 function calcDoff(lengthM, speed, start) {
@@ -239,17 +291,28 @@ function dayDiff(from, to) {
   const day = d => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   return Math.round((day(to) - day(from)) / 86400000);
 }
+const dayText = dd => dd <= 0 ? '' : dd === 1 ? '다음날' : '+' + dd + '일';
 function durText(sec) {
   const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
   return (h ? h + '시간 ' : '') + m + '분' + (s ? ' ' + s + '초' : '');
 }
-function leftText(sec) {            // 남은 시간: 1시간 이상이면 분까지, 그 아래는 초까지
-  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60);
-  return h ? h + '시간 ' + m + '분' : m + '분 ' + pad(sec % 60) + '초';
-}
+const countdown = sec => Math.floor(sec / 3600) + ':' + pad(Math.floor(sec % 3600 / 60)) + ':' + pad(sec % 60);
 const hm = d => pad(d.getHours()) + ':' + pad(d.getMinutes());
+const hms = d => hm(d) + ':' + pad(d.getSeconds());
 
-// 시작을 누르기 전, 화면의 입력으로 본 시작 시각 (직접 입력 칸이 비어 있으면 null)
+// 5분 전 알람: 소리는 아이폰 시계 앱에 맡긴다 (웹앱은 화면이 꺼지면 못 울린다). 단축어 "도핑알람"이 시각을 받아 알람을 만든다
+const ALARM_LEAD_MIN = 5;
+const ALARM_SHORTCUT = '도핑알람';
+// 롤의 알람 시각(분 단위로 내림). 시계 알람은 시·분만 알아서, 이미 지났거나 24시간 넘게 남았으면 다른 날에 울리므로 null
+function alarmTime(r, now) {
+  const t = new Date(r.endMs - ALARM_LEAD_MIN * 60000);
+  t.setSeconds(0, 0);
+  const ahead = t - now;
+  return ahead > 0 && ahead < 86400000 ? t : null;
+}
+const alarmUrl = t => 'shortcuts://run-shortcut?name=' + encodeURIComponent(ALARM_SHORTCUT) + '&input=text&text=' + encodeURIComponent(hm(t));
+
+// 입력 칸으로 본 시작 시각 (직접 입력 칸이 비어 있으면 null)
 function inputStart(now) {
   if (!manualStart) return now;
   const [h, m] = $('startTime').value.split(':').map(Number);
@@ -259,22 +322,11 @@ function inputStart(now) {
   return d;
 }
 
-function renderDoff() {
-  const now = new Date();
-  let start, end, hint = '';
-  if (run) { start = new Date(run.startMs); end = new Date(run.endMs); }
-  else {
-    const len = parseNum($('len').value), spd = parseNum($('spd').value);
-    start = inputStart(now);
-    if (!(len > 0)) hint = '길이를 넣으세요';
-    else if (!(spd > 0)) hint = '속도를 넣으세요';
-    else if (!start) hint = '시작 시각을 넣으세요';
-    else end = calcDoff(len, spd, start).end;
-  }
-  const shownStart = run ? start : now;
-  $('nowText').textContent = hm(shownStart) + ':' + pad(shownStart.getSeconds());
-  $('doffLabel').textContent = run ? '도핑 시각' : '예상 도핑 시각';
-  $('result').classList.toggle('fixed', !!run);
+// 새 롤 입력에 대한 예상 도핑 시각
+function renderPreview(now) {
+  $('nowText').textContent = hms(now);
+  const len = parseNum($('len').value), spd = parseNum($('spd').value), start = inputStart(now);
+  const hint = !(len > 0) ? '길이를 넣으세요' : !(spd > 0) ? '속도를 넣으세요' : !start ? '시작 시각을 넣으세요' : '';
   $('result').classList.toggle('empty', !!hint);
   $('goBtn').disabled = !!hint;
   if (hint) {
@@ -284,65 +336,111 @@ function renderDoff() {
     $('doffSub').textContent = hint;
     return;
   }
-  const dd = dayDiff(run ? now : start, end);   // 고정 뒤에는 오늘 기준, 그 전에는 시작 날짜 기준
-  const left = Math.round((end - now) / 1000);
-  $('doffDay').textContent = dd <= 0 ? '' : dd === 1 ? '다음날' : '+' + dd + '일';
+  const { durSec, end } = calcDoff(len, spd, start);
+  $('doffDay').textContent = dayText(dayDiff(start, end));
   $('doffHM').textContent = hm(end);
   $('doffSec').textContent = ':' + pad(end.getSeconds());
-  $('result').classList.toggle('over', !!run && left <= 0);
-  $('doffSub').textContent =
-    !run ? '소요 ' + durText(Math.round((end - start) / 1000)) + ' · ' + hm(start) + ' 시작'
-    : left > 0 ? '남은 시간 ' + leftText(left) + ' · ' + hm(start) + ' 시작'
-    : '도핑 시각이 지났습니다 · ' + Math.floor(-left / 60) + '분 전';
+  $('doffSub').textContent = '소요 ' + durText(durSec) + ' · ' + hm(start) + ' 시작';
 }
 
-// 고정 여부와 시작 방식에 맞춰 입력 칸을 잠그거나 푼다
-function applyState() {
-  const on = !!run;
-  $('len').disabled = $('spd').disabled = on;
-  $('seg').hidden = on;
-  $('startTime').hidden = on || !manualStart;
-  $('nowText').hidden = !on && manualStart;
-  $('modeNow').classList.toggle('on', !manualStart);
-  $('modeSet').classList.toggle('on', manualStart);
-  $('goBtn').textContent = on ? '다시 입력' : '시작';
-  $('goBtn').classList.toggle('reset', on);
-  renderDoff();
+// 돌아가는 롤 목록: 도핑이 빠른 것부터. 카드는 목록이 바뀔 때만 다시 만들고, 숫자는 매초 tickRuns가 고친다
+function renderRuns() {
+  runs.sort((a, b) => a.endMs - b.endMs);
+  $('runList').replaceChildren(...runs.map(r => {
+    const el = $('runTpl').content.firstElementChild.cloneNode(true);
+    el.dataset.id = r.id;
+    el.querySelector('.rname').textContent = r.name ? r.name + '호기' : '';
+    el.querySelector('.rinfo').textContent = r.len + ' m · ' + r.spd + ' m/min · ' + hm(new Date(r.startMs)) + ' 시작';
+    return el;
+  }));
+  tickRuns(new Date());
 }
+function tickRuns(now) {
+  for (const el of $('runList').children) {
+    const r = runs.find(x => String(x.id) === el.dataset.id);
+    const end = new Date(r.endMs), left = Math.round((r.endMs - now) / 1000), day = dayText(dayDiff(now, end));
+    el.querySelector('.cend').textContent = '도핑 시각' + (day ? ' · ' + day : '');
+    el.querySelector('.rend').textContent = hms(end);
+    el.querySelector('.cleft').textContent = left > 0 ? '남은 시간' : '지난 시간';
+    el.querySelector('.rleft').textContent = left > 0 ? countdown(left) : '+' + countdown(-left);
+    el.classList.toggle('soon', left <= ALARM_LEAD_MIN * 60);
+    const at = alarmTime(r, now), b = el.querySelector('.ralarm');
+    b.hidden = !at;
+    if (at) {
+      b.textContent = r.alarm ? hm(at) + ' 알람 요청함' : ALARM_LEAD_MIN + '분 전 알람 · ' + hm(at);
+      b.classList.toggle('sent', !!r.alarm);
+    }
+  }
+}
+function tick() {
+  const now = new Date();
+  renderPreview(now);
+  tickRuns(now);
+}
+
 function setManual(on) {
   manualStart = on;
   if (on) $('startTime').value = hm(new Date());
-  applyState();
-}
-function setRun(r) {
-  run = r;
-  try { r ? localStorage.setItem('doff.run', JSON.stringify(r)) : localStorage.removeItem('doff.run'); } catch (e) {}
-  setManual(false);
+  $('startTime').hidden = !on;
+  $('nowText').hidden = on;
+  $('modeNow').classList.toggle('on', !on);
+  $('modeSet').classList.toggle('on', on);
+  tick();
 }
 
 let savedSpeed = null;
 try { savedSpeed = localStorage.getItem('doff.speed'); } catch (e) {}
 $('spd').value = withCommas(savedSpeed || String(DEFAULT_SPEED));
-if (run) { $('len').value = run.len; $('spd').value = run.spd; }
 
-$('len').addEventListener('input', () => { formatField($('len')); renderDoff(); });
+$('mc').addEventListener('input', () => { $('mc').value = $('mc').value.replace(/\D/g, ''); });
+$('len').addEventListener('input', () => { formatField($('len')); tick(); });
 $('spd').addEventListener('input', () => {
   formatField($('spd'));
   if (parseNum($('spd').value) > 0) { try { localStorage.setItem('doff.speed', $('spd').value.replace(/,/g, '')); } catch (e) {} }
-  renderDoff();
+  tick();
 });
-$('startTime').addEventListener('input', renderDoff);
+$('startTime').addEventListener('input', tick);
 $('modeNow').addEventListener('click', () => setManual(false));
 $('modeSet').addEventListener('click', () => setManual(true));
+
+// 시작: 그 순간(직접 입력이면 넣은 시각)을 시작 시각으로 찍어 목록에 올린다
 $('goBtn').addEventListener('click', () => {
-  if (run) { if (confirm('고정한 도핑 시각을 풀고 다시 입력할까요?')) setRun(null); return; }
-  const start = inputStart(new Date());
+  const name = $('mc').value, start = inputStart(new Date());
+  const same = name && runs.find(r => r.name === name);
+  if (same && !confirm(name + '호기가 이미 목록에 있습니다. 새 롤로 바꿀까요?')) return;
   const end = calcDoff(parseNum($('len').value), parseNum($('spd').value), start).end;
-  setRun({ len: $('len').value, spd: $('spd').value, startMs: start.getTime(), endMs: end.getTime() });
+  runs = runs.filter(r => r !== same);
+  runs.push({ id: Date.now(), name, len: $('len').value, spd: $('spd').value, startMs: start.getTime(), endMs: end.getTime() });
+  saveRuns();
+  $('mc').value = '';
+  $('len').value = '';              // 같은 값으로 두 번 눌러 롤이 겹쳐 올라가지 않게 비운다
+  if (document.activeElement) document.activeElement.blur();
+  setManual(false);
+  renderRuns();
+  $('view-doff').scrollTop = 0;
 });
-setInterval(renderDoff, 1000);
-document.addEventListener('visibilitychange', renderDoff);
-applyState();
+$('runList').addEventListener('click', e => {
+  const card = e.target.closest('.run');
+  if (!card) return;
+  const r = runs.find(x => String(x.id) === card.dataset.id);
+  if (e.target.closest('.ralarm')) {
+    const at = alarmTime(r, new Date());
+    if (!at) return;
+    r.alarm = true;                 // 실제로 만들어졌는지는 알 수 없어 "요청함"으로만 적는다
+    saveRuns();
+    tick();
+    location.href = alarmUrl(at);
+  } else if (e.target.closest('.rdone')) {
+    if (!confirm((r.name ? r.name + '호기를' : '이 롤을') + ' 목록에서 지울까요?')) return;
+    runs = runs.filter(x => x !== r);
+    saveRuns();
+    renderRuns();
+  }
+});
+setInterval(tick, 1000);
+document.addEventListener('visibilitychange', tick);
+renderRuns();
+tick();
 
 // ── 일반 계산기 ──
 // tokens: [수, 연산자, 수, …], cur: 지금 치고 있는 수(문자열), done: 방금 = 을 눌렀는지
