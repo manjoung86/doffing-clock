@@ -7,14 +7,14 @@
     </linearGradient>
   </defs>
   <rect width="512" height="512" fill="url(#bg)"/>
-  <g stroke="#ffffff" stroke-width="36" stroke-linecap="round" fill="none">
-    <path d="M166 114 V218 M114 166 H218"/>
-    <path d="M294 166 H398"/>
-    <path d="M129 309 L203 383 M203 309 L129 383"/>
+  <g stroke="#ffffff" stroke-width="30" stroke-linecap="round" fill="none">
+    <path d="M148 92 V204 M92 148 H204"/>
+    <path d="M308 148 H420"/>
+    <path d="M108 324 L188 404 M188 324 L108 404"/>
   </g>
-  <circle cx="346" cy="346" r="86" fill="#ffffff"/>
-  <g stroke="#1f5fb8" stroke-width="28" stroke-linecap="round" fill="none">
-    <path d="M306 324 H386"/>
-    <path d="M306 368 H386"/>
+  <circle cx="364" cy="364" r="80" fill="#ffffff"/>
+  <g stroke="#1f5fb8" stroke-width="24" stroke-linecap="round" fill="none">
+    <path d="M330 345 H398"/>
+    <path d="M330 383 H398"/>
   </g>
 </svg>
