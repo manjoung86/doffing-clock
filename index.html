@@ -117,10 +117,10 @@
   .row input[type="text"]:focus { box-shadow: 0 0 0 2px var(--accent); }
   .mcrow { align-items: flex-start; padding: 10px 0; }
   .mcrow .name { padding-top: 9px; }
-  .chips { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 8px; }
-  .chips button { min-width: 52px; height: 40px; padding: 0 12px; border-radius: 10px; background: var(--field); font-size: 17px; font-weight: 600; }
+  .chips { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .chips button { min-width: 0; height: 40px; padding: 0 2px; border-radius: 10px; background: var(--field); font-size: 17px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .chips button.on { background: var(--accent); color: var(--on-accent); }
-  .chips button.util { font-size: 15px; font-weight: 400; color: var(--text-secondary); }
+  .chips button.util { font-size: 14px; font-weight: 400; color: var(--text-secondary); }
   .row .unit { width: 50px; flex: none; font-size: 15px; color: var(--text-muted); }
   .row .start { flex: 1; min-width: 0; text-align: right; font-size: 22px; font-weight: 600; }
   .row input[type="time"] {
@@ -288,10 +288,10 @@ try {
 } catch (e) {}
 
 // 호기 목록: 처음엔 기본값이고, 휴대폰에서 더하거나 뺄 수 있다. selMc는 새 롤에 고른 호기
-const DEFAULT_MACHINES = ['5b-1', '6a'];
+const DEFAULT_MACHINES = ['2A', '2B', '3A', '3B', '4A', '4A-1', '4B', '5A', '5B', '5B-1', '6A', '6A-1', '6B'];
 let machines = DEFAULT_MACHINES, selMc = '';
-try { machines = JSON.parse(localStorage.getItem('doff.machines')) || DEFAULT_MACHINES; } catch (e) {}
-function saveMachines() { try { localStorage.setItem('doff.machines', JSON.stringify(machines)); } catch (e) {} }
+try { machines = JSON.parse(localStorage.getItem('doff.machines.v2')) || DEFAULT_MACHINES; } catch (e) {}
+function saveMachines() { try { localStorage.setItem('doff.machines.v2', JSON.stringify(machines)); } catch (e) {} }
 function renderMachines() {
   const chip = (text, cls, k) => {
     const b = document.createElement('button');
