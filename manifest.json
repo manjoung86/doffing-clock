@@ -1,6 +1,6 @@
 {
-  "name": "도핑시계",
-  "short_name": "도핑시계",
+  "name": "도핑계산기",
+  "short_name": "도핑계산기",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
