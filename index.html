@@ -9,8 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="도핑시계">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f2f2f7">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-180.png">
 <link rel="manifest" href="manifest.json">
@@ -29,34 +28,9 @@
     --danger: #d03b3b;
     --key: #ffffff;
   }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      color-scheme: dark;
-      --bg: #000000;
-      --card: #1a1a19;
-      --text-primary: #f0efec;
-      --text-secondary: #c3c2b7;
-      --text-muted: #8f8e86;
-      --line: #2c2c2a;
-      --field: #262624;
-      --accent: #4c94ea;
-      --on-accent: #ffffff;
-      --danger: #ef6a6a;
-      --key: #2a2a28;
-    }
-  }
-  /* 계산기 탭은 아이폰이 다크 모드여도 늘 흰 바탕으로 보여 준다 (도핑시계 탭은 기기 설정을 따른다) */
+  /* 아이폰이 다크 모드여도 늘 밝은 화면으로 보여 준다. 계산기 탭은 흰 바탕에 옅은 회색 키 */
   body.oncalc {
-    color-scheme: light;
     --bg: #ffffff;
-    --card: #ffffff;
-    --text-primary: #0b0b0b;
-    --text-secondary: #52514e;
-    --text-muted: #8a8984;
-    --line: #e4e3df;
-    --field: #f2f2f7;
-    --accent: #2a78d6;
-    --danger: #d03b3b;
     --key: #f2f2f7;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
