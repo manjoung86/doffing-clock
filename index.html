@@ -1,0 +1,360 @@
+<!doctype html>
+<!-- 권취 길이와 속도로 도핑 시각을 계산하는 아이폰 홈 화면용 웹앱 (도핑시계·일반 계산기) -->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>도핑시계</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="도핑시계">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f2f2f7;
+    --card: #ffffff;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #8a8984;
+    --line: #e4e3df;
+    --field: #f2f2f7;
+    --accent: #2a78d6;
+    --on-accent: #ffffff;
+    --key: #ffffff;
+    --key-fn: #dcdce2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --bg: #000000;
+      --card: #1a1a19;
+      --text-primary: #f0efec;
+      --text-secondary: #c3c2b7;
+      --text-muted: #8f8e86;
+      --line: #2c2c2a;
+      --field: #262624;
+      --accent: #4c94ea;
+      --on-accent: #ffffff;
+      --key: #2a2a28;
+      --key-fn: #4a4a47;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+  }
+  button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .view {
+    flex: 1; min-height: 0;
+    display: flex; flex-direction: column; gap: 12px;
+    padding: calc(env(safe-area-inset-top) + 12px) calc(env(safe-area-inset-right) + 16px) 12px calc(env(safe-area-inset-left) + 16px);
+  }
+  .view[hidden] { display: none; }
+  .card { background: var(--card); border-radius: 18px; }
+
+  /* 도핑시계 */
+  #view-doff { overflow-y: auto; }
+  .result { padding: 18px 20px 20px; text-align: center; }
+  .result .label { font-size: 15px; color: var(--text-secondary); }
+  .result .time { margin-top: 2px; display: flex; justify-content: center; align-items: baseline; gap: 8px; }
+  .result .day { margin-left: 8px; font-size: 17px; font-weight: 700; color: var(--accent); }
+  .result .hm { font-size: 84px; font-weight: 700; line-height: 1.05; letter-spacing: -2px; }
+  .result .sec { font-size: 26px; font-weight: 600; color: var(--text-muted); }
+  .result.empty .hm { color: var(--text-muted); }
+  .result .sub { margin-top: 6px; font-size: 16px; color: var(--text-secondary); }
+
+  .form { padding: 0 16px; }
+  .row { display: flex; align-items: center; gap: 10px; min-height: 62px; }
+  .row + .row { border-top: 1px solid var(--line); }
+  .row .name { width: 52px; flex: none; font-size: 17px; color: var(--text-secondary); }
+  .row input[type="text"] {
+    flex: 1; min-width: 0;
+    font: inherit; font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums;
+    color: var(--text-primary); text-align: right;
+    background: var(--field); border: 0; border-radius: 10px; padding: 8px 12px;
+    outline: none; -webkit-user-select: text; user-select: text;
+  }
+  .row input[type="text"]:focus { box-shadow: 0 0 0 2px var(--accent); }
+  .row .unit { width: 50px; flex: none; font-size: 15px; color: var(--text-muted); }
+  .row .start { flex: 1; min-width: 0; text-align: right; font-size: 22px; font-weight: 600; }
+  .row input[type="time"] {
+    flex: 1; min-width: 0;
+    font: inherit; font-size: 20px; font-weight: 600; color: var(--text-primary); text-align: right;
+    background: var(--field); border: 0; border-radius: 10px; padding: 6px 10px;
+  }
+  .row input[type="time"][hidden] { display: none; }
+  .row input[type="time"]::-webkit-calendar-picker-indicator { display: none; }
+  .seg { flex: none; display: flex; background: var(--field); border-radius: 10px; padding: 3px; }
+  .seg button { font-size: 15px; padding: 7px 13px; border-radius: 8px; color: var(--text-secondary); }
+  .seg button.on { background: var(--accent); color: var(--on-accent); font-weight: 600; }
+
+  /* 일반 계산기 */
+  .display { flex: 1; min-height: 96px; display: flex; flex-direction: column; justify-content: flex-end; text-align: right; padding: 0 8px; overflow: hidden; }
+  .display .expr { min-height: 24px; font-size: 19px; color: var(--text-muted); white-space: nowrap; overflow: hidden; }
+  .display .value { font-size: 64px; font-weight: 300; line-height: 1.1; white-space: nowrap; }
+  .keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .keys button {
+    height: clamp(54px, 9.4dvh, 78px); border-radius: 18px;
+    font-size: 28px; background: var(--key); color: var(--text-primary);
+  }
+  .keys button.fn { background: var(--key-fn); font-size: 24px; }
+  .keys button.op { background: var(--accent); color: var(--on-accent); font-size: 32px; }
+  .keys button:active { filter: brightness(0.85); }
+
+  /* 아래 탭 */
+  .tabs {
+    flex: none; display: flex;
+    background: var(--card); border-top: 1px solid var(--line);
+    padding: 6px calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 6px) calc(env(safe-area-inset-left) + 12px);
+  }
+  .tabs button { flex: 1; height: 44px; font-size: 16px; color: var(--text-muted); border-radius: 12px; }
+  .tabs button.on { color: var(--accent); font-weight: 700; }
+</style>
+</head>
+<body>
+<main>
+  <section class="view" id="view-doff">
+    <div class="card result empty" id="result">
+      <div class="label">도핑 시각<span class="day" id="doffDay"></span></div>
+      <div class="time num">
+        <span class="hm" id="doffHM">--:--</span><span class="sec" id="doffSec"></span>
+      </div>
+      <div class="sub num" id="doffSub">길이를 넣으세요</div>
+    </div>
+    <div class="card form">
+      <label class="row">
+        <span class="name">길이</span>
+        <input type="text" id="len" inputmode="decimal" autocomplete="off" placeholder="0">
+        <span class="unit">m</span>
+      </label>
+      <label class="row">
+        <span class="name">속도</span>
+        <input type="text" id="spd" inputmode="decimal" autocomplete="off" placeholder="0">
+        <span class="unit">m/min</span>
+      </label>
+      <div class="row">
+        <span class="name">시작</span>
+        <span class="start num" id="nowText"></span>
+        <input type="time" id="startTime" hidden>
+        <div class="seg">
+          <button type="button" id="modeNow" class="on">지금</button>
+          <button type="button" id="modeSet">직접</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="view-calc" hidden>
+    <div class="display num">
+      <div class="expr" id="calcExpr"></div>
+      <div class="value" id="calcValue">0</div>
+    </div>
+    <div class="keys" id="keys">
+      <button class="fn" data-k="C">C</button><button class="fn" data-k="back">⌫</button><button class="fn" data-k="%">%</button><button class="op" data-k="÷">÷</button>
+      <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button><button class="op" data-k="×">×</button>
+      <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button><button class="op" data-k="−">−</button>
+      <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button><button class="op" data-k="+">+</button>
+      <button data-k="sign">±</button><button data-k="0">0</button><button data-k=".">.</button><button class="op" data-k="=">=</button>
+    </div>
+  </section>
+</main>
+
+<nav class="tabs">
+  <button type="button" data-view="doff" class="on">도핑시계</button>
+  <button type="button" data-view="calc">계산기</button>
+</nav>
+
+<script>
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, '0');
+const DEFAULT_SPEED = 500;
+
+// ── 숫자 표시 ──
+function withCommas(s) {            // "180000.5" → "180,000.5" (부호·소수점 유지)
+  if (/e/i.test(s)) return s;
+  const neg = s.startsWith('-');
+  const [i, d] = (neg ? s.slice(1) : s).split('.');
+  return (neg ? '-' : '') + i.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (d !== undefined ? '.' + d : '');
+}
+function parseNum(s) { return parseFloat(String(s).replace(/,/g, '')); }
+
+// 입력 칸에 천 단위 쉼표를 넣고 커서 위치를 유지한다
+function formatField(el) {
+  const before = el.value.slice(0, el.selectionStart).replace(/[^\d.]/g, '').length;
+  let s = el.value.replace(/[^\d.]/g, '');
+  const dot = s.indexOf('.');
+  if (dot >= 0) s = s.slice(0, dot + 1) + s.slice(dot + 1).replace(/\./g, '');
+  el.value = withCommas(s);
+  let pos = 0, seen = 0;
+  while (pos < el.value.length && seen < before) { if (/[\d.]/.test(el.value[pos])) seen++; pos++; }
+  el.setSelectionRange(pos, pos);
+}
+
+// ── 도핑시계 ──
+let manualStart = false;
+
+// 길이(m), 속도(m/min), 시작 시각 → 소요 시간과 도핑 시각
+function calcDoff(lengthM, speed, start) {
+  const durSec = Math.round(lengthM / speed * 60);
+  const end = new Date(start.getTime() + durSec * 1000);
+  const day = d => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  return { durSec, end, dayDiff: Math.round((day(end) - day(start)) / 86400000) };
+}
+function durText(sec) {
+  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+  return (h ? h + '시간 ' : '') + m + '분' + (s ? ' ' + s + '초' : '');
+}
+
+function renderDoff() {
+  const now = new Date();
+  $('nowText').textContent = pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+
+  const len = parseNum($('len').value), spd = parseNum($('spd').value);
+  let start = now, hint = '';
+  if (manualStart) {
+    const [h, m] = $('startTime').value.split(':').map(Number);
+    if (isNaN(h) || isNaN(m)) hint = '시작 시각을 넣으세요';
+    else { start = new Date(now); start.setHours(h, m, 0, 0); }
+  }
+  if (!(len > 0)) hint = '길이를 넣으세요';
+  else if (!(spd > 0)) hint = '속도를 넣으세요';
+
+  $('result').classList.toggle('empty', !!hint);
+  if (hint) {
+    $('doffDay').textContent = '';
+    $('doffHM').textContent = '--:--';
+    $('doffSec').textContent = '';
+    $('doffSub').textContent = hint;
+    return;
+  }
+  const r = calcDoff(len, spd, start);
+  $('doffDay').textContent = r.dayDiff === 0 ? '' : r.dayDiff === 1 ? '다음날' : '+' + r.dayDiff + '일';
+  $('doffHM').textContent = pad(r.end.getHours()) + ':' + pad(r.end.getMinutes());
+  $('doffSec').textContent = ':' + pad(r.end.getSeconds());
+  $('doffSub').textContent = '소요 ' + durText(r.durSec) + ' · ' + pad(start.getHours()) + ':' + pad(start.getMinutes()) + ' 시작';
+}
+
+function setManual(on) {
+  manualStart = on;
+  if (on) { const n = new Date(); $('startTime').value = pad(n.getHours()) + ':' + pad(n.getMinutes()); }
+  $('startTime').hidden = !on;
+  $('nowText').hidden = on;
+  $('modeNow').classList.toggle('on', !on);
+  $('modeSet').classList.toggle('on', on);
+  renderDoff();
+}
+
+let savedSpeed = null;
+try { savedSpeed = localStorage.getItem('doff.speed'); } catch (e) {}
+$('spd').value = withCommas(savedSpeed || String(DEFAULT_SPEED));
+
+$('len').addEventListener('input', () => { formatField($('len')); renderDoff(); });
+$('spd').addEventListener('input', () => {
+  formatField($('spd'));
+  if (parseNum($('spd').value) > 0) { try { localStorage.setItem('doff.speed', $('spd').value.replace(/,/g, '')); } catch (e) {} }
+  renderDoff();
+});
+$('startTime').addEventListener('input', renderDoff);
+$('modeNow').addEventListener('click', () => setManual(false));
+$('modeSet').addEventListener('click', () => setManual(true));
+setInterval(renderDoff, 1000);
+document.addEventListener('visibilitychange', renderDoff);
+renderDoff();
+
+// ── 일반 계산기 ──
+// tokens: [수, 연산자, 수, …], cur: 지금 치고 있는 수(문자열), done: 방금 = 을 눌렀는지
+const calc = { tokens: [], cur: '', done: false, expr: '', error: false };
+const trim = v => String(parseFloat(v.toPrecision(12)));
+
+function evalTokens(t) {            // 곱셈·나눗셈 먼저, 그다음 덧셈·뺄셈
+  const a = t.slice();
+  for (let i = 1; i < a.length;) {
+    if (a[i] === '×' || a[i] === '÷') a.splice(i - 1, 3, a[i] === '×' ? a[i - 1] * a[i + 1] : a[i - 1] / a[i + 1]);
+    else i += 2;
+  }
+  let r = a[0];
+  for (let i = 1; i < a.length; i += 2) r = a[i] === '+' ? r + a[i + 1] : r - a[i + 1];
+  return r;
+}
+const exprText = t => t.map(x => typeof x === 'number' ? withCommas(trim(x)) : x).join(' ');
+
+function pressKey(k) {
+  const c = calc;
+  if (c.error || k === 'C') { c.tokens = []; c.cur = ''; c.done = false; c.expr = ''; c.error = false; if (k === 'C') return; }
+  if (/^\d$/.test(k) || k === '.') {
+    if (c.done) { c.cur = ''; c.done = false; c.expr = ''; }
+    if (k === '.') { if (!c.cur.includes('.')) c.cur = (c.cur === '' || c.cur === '-' ? c.cur + '0' : c.cur) + '.'; }
+    else if (c.cur.replace(/\D/g, '').length < 15) c.cur = (c.cur === '0' ? '' : c.cur === '-0' ? '-' : c.cur) + k;
+  } else if (k === 'back') {
+    if (c.done) { c.cur = ''; c.done = false; c.expr = ''; }
+    else { c.cur = c.cur.slice(0, -1); if (c.cur === '-') c.cur = ''; }
+  } else if (k === 'sign') {
+    if (c.cur !== '') { c.cur = c.cur.startsWith('-') ? c.cur.slice(1) : '-' + c.cur; c.done = false; c.expr = ''; }
+  } else if (k === '%') {
+    if (c.cur !== '') { c.cur = trim(parseFloat(c.cur) / 100); c.done = false; c.expr = ''; }
+  } else if (k === '=') {
+    if (c.cur !== '') c.tokens.push(parseFloat(c.cur));
+    else if (c.tokens.length) c.tokens.pop();
+    if (!c.tokens.length) return;
+    const r = evalTokens(c.tokens);
+    c.expr = exprText(c.tokens) + ' =';
+    c.tokens = [];
+    if (!isFinite(r)) { c.cur = ''; c.error = true; }
+    else { c.cur = trim(r); c.done = true; }
+  } else {                           // + − × ÷
+    if (c.cur !== '') { c.tokens.push(parseFloat(c.cur), k); c.cur = ''; }
+    else if (c.tokens.length) c.tokens[c.tokens.length - 1] = k;
+    else c.tokens.push(0, k);
+    c.done = false; c.expr = '';
+  }
+}
+
+function renderCalc() {
+  const c = calc;
+  let shown = c.cur;
+  if (shown === '') shown = c.tokens.length ? trim(c.tokens[c.tokens.length - 2]) : '0';
+  const text = c.error ? '오류' : withCommas(shown);
+  $('calcValue').textContent = text;
+  $('calcValue').style.fontSize = text.length > 15 ? '30px' : text.length > 11 ? '40px' : text.length > 8 ? '52px' : '';
+  $('calcExpr').textContent = c.expr || exprText(c.tokens);
+}
+$('keys').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  pressKey(b.dataset.k);
+  renderCalc();
+});
+
+// ── 탭 ──
+document.querySelector('.tabs').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (document.activeElement) document.activeElement.blur();
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
+  $('view-doff').hidden = b.dataset.view !== 'doff';
+  $('view-calc').hidden = b.dataset.view !== 'calc';
+});
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>
