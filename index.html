@@ -9,34 +9,45 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="도핑계산기">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#f2f2f7">
+<meta name="theme-color" content="#f3f5f9">
 <link rel="apple-touch-icon" href="icon-180.png?v=4">
 <link rel="icon" href="icon-180.png?v=4">
 <link rel="manifest" href="manifest.json">
 <style>
   :root {
     color-scheme: light;
-    --bg: #f2f2f7;
-    --card: #ffffff;
+    --bg: #f3f5f9;
+    --card: rgba(255, 255, 255, 0.62);
     --text-primary: #0b0b0b;
-    --text-secondary: #52514e;
-    --text-muted: #8a8984;
-    --line: #e4e3df;
-    --field: #f2f2f7;
+    --text-secondary: #4a4c55;
+    --text-muted: #7f828c;
+    --line: rgba(60, 70, 100, 0.12);
+    --field: rgba(118, 128, 160, 0.13);
     --accent: #2a78d6;
     --on-accent: #ffffff;
     --danger: #d03b3b;
-    --key: #ffffff;
-  }
-  /* 아이폰이 다크 모드여도 늘 밝은 화면으로 보여 준다. 계산기 탭은 흰 바탕에 옅은 회색 키 */
-  body.oncalc {
-    --bg: #ffffff;
-    --key: #f2f2f7;
+    /* 리퀴드 글래스 느낌: 반투명한 흰 유리 면 + 위쪽 테두리 하이라이트 + 부드러운 그림자. 입력 칸은 안쪽 그림자로 들어가 보이게 */
+    --key-face: linear-gradient(rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.50));
+    --accent-face: linear-gradient(rgba(92, 164, 255, 0.96), rgba(34, 108, 214, 0.94));
+    --raise: inset 0 0 0 1px rgba(255, 255, 255, 0.70), inset 0 2px 1px rgba(255, 255, 255, 0.95), 0 1px 2px rgba(30, 40, 70, 0.08), 0 6px 14px rgba(30, 50, 100, 0.13);
+    --raise-sm: inset 0 0 0 1px rgba(255, 255, 255, 0.70), inset 0 1.5px 1px rgba(255, 255, 255, 0.95), 0 1px 2px rgba(30, 40, 70, 0.10), 0 3px 7px rgba(30, 50, 100, 0.10);
+    --raise-accent: inset 0 0 0 1px rgba(255, 255, 255, 0.28), inset 0 2px 1px rgba(255, 255, 255, 0.50), 0 1px 2px rgba(20, 60, 120, 0.20), 0 6px 14px rgba(42, 120, 214, 0.35);
+    --card-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.70), inset 0 1.5px 1px rgba(255, 255, 255, 0.95), 0 1px 2px rgba(30, 40, 70, 0.05), 0 8px 20px rgba(30, 50, 100, 0.10);
+    --sunk: inset 0 1px 3px rgba(30, 40, 70, 0.16);
+    --blur: blur(18px) saturate(180%);
+    /* 떠 있는 탭 바가 차지하는 아래쪽 자리 (바닥에서 띄운 거리 + 바 높이) */
+    --tab-bottom: max(10px, calc(env(safe-area-inset-bottom) - 8px));
+    --tab-space: calc(var(--tab-bottom) + 56px);
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; margin: 0; }
   body {
-    background: var(--bg);
+    /* 유리 면 뒤로 비칠 옅은 색 번짐 (밝기는 유지) */
+    background:
+      radial-gradient(90% 55% at 5% 0%, #d6e6ff 0%, rgba(214, 230, 255, 0) 62%),
+      radial-gradient(80% 50% at 100% 28%, #ffe4cf 0%, rgba(255, 228, 207, 0) 62%),
+      radial-gradient(95% 60% at 55% 100%, #dfdbff 0%, rgba(223, 219, 255, 0) 62%),
+      var(--bg);
     color: var(--text-primary);
     font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
     display: flex;
@@ -54,10 +65,10 @@
   .view {
     flex: 1; min-height: 0;
     display: flex; flex-direction: column; gap: 10px;
-    padding: calc(env(safe-area-inset-top) + 10px) calc(env(safe-area-inset-right) + 16px) 12px calc(env(safe-area-inset-left) + 16px);
+    padding: calc(env(safe-area-inset-top) + 10px) calc(env(safe-area-inset-right) + 16px) calc(var(--tab-space) + 12px) calc(env(safe-area-inset-left) + 16px);
   }
   .view[hidden] { display: none; }
-  .card { background: var(--card); border-radius: 18px; }
+  .card { background: var(--card); border-radius: 22px; box-shadow: var(--card-shadow); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
 
   /* 도핑시계 */
   #view-doff { overflow-y: auto; }
@@ -73,9 +84,9 @@
   .run.soon .rleft { color: var(--danger); }
   .run .rbot { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
   .run .rinfo { flex: 1; min-width: 0; font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .run .rbot button { flex: none; height: 34px; padding: 0 12px; border-radius: 9px; background: var(--field); font-size: 14px; color: var(--text-secondary); }
-  .run .ralarm:not(.sent) { background: var(--accent); color: var(--on-accent); font-weight: 600; }
-  .run.s0 { box-shadow: inset 0 0 0 2px var(--accent); margin-bottom: 2px; }
+  .run .rbot button { flex: none; height: 34px; padding: 0 12px; border-radius: 9px; background: var(--key-face); box-shadow: var(--raise-sm); font-size: 14px; color: var(--text-secondary); }
+  .run .ralarm:not(.sent) { background: var(--accent-face); color: var(--on-accent); font-weight: 600; }
+  .run.s0 { box-shadow: inset 0 0 0 2px var(--accent), var(--card-shadow); margin-bottom: 2px; }
   /* 둘째부터는 한 줄짜리로 줄이고, 누르면 아랫줄(알람·완료)이 펼쳐진다 */
   .run:not(.s0) { border-radius: 13px; }
   .run:not(.s0) .cap { display: none; }
@@ -111,7 +122,7 @@
     flex: 1; min-width: 0;
     font: inherit; font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums;
     color: var(--text-primary); text-align: right;
-    background: var(--field); border: 0; border-radius: 10px; padding: 5px 12px;
+    background: var(--field); box-shadow: var(--sunk); border: 0; border-radius: 10px; padding: 5px 12px;
     outline: none; -webkit-user-select: text; user-select: text;
   }
   .row input[type="text"]:focus { box-shadow: 0 0 0 2px var(--accent); }
@@ -121,23 +132,24 @@
   .chips { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
   .chips.sub { margin-top: 8px; }
   .chips.sub:empty { display: none; }
-  .chips button { min-width: 0; height: 36px; padding: 0 2px; border-radius: 10px; background: var(--field); font-size: 17px; font-weight: 600; white-space: nowrap; }
-  .chips button.open { box-shadow: inset 0 0 0 2px var(--accent); }
-  .chips button.on { background: var(--accent); color: var(--on-accent); }
+  .chips button { min-width: 0; height: 36px; padding: 0 2px; border-radius: 10px; background: var(--key-face); box-shadow: var(--raise-sm); font-size: 17px; font-weight: 600; white-space: nowrap; }
+  .chips button.open { box-shadow: inset 0 0 0 2px var(--accent), var(--raise-sm); }
+  .chips button.on { background: var(--accent-face); color: var(--on-accent); }
   .row .unit { width: 50px; flex: none; font-size: 15px; color: var(--text-muted); }
   .row .start { flex: 1; min-width: 0; text-align: right; font-size: clamp(16px, 5.4vw, 22px); font-weight: 600; white-space: nowrap; }
   .row input[type="time"] {
     flex: 1; min-width: 0;
     font: inherit; font-size: 20px; font-weight: 600; color: var(--text-primary); text-align: right;
-    background: var(--field); border: 0; border-radius: 10px; padding: 6px 10px;
+    background: var(--field); box-shadow: var(--sunk); border: 0; border-radius: 10px; padding: 6px 10px;
   }
   .row input[type="time"][hidden] { display: none; }
   .row input[type="time"]::-webkit-calendar-picker-indicator { display: none; }
-  .seg { flex: none; display: flex; background: var(--field); border-radius: 10px; padding: 3px; }
+  .seg { flex: none; display: flex; background: var(--field); box-shadow: var(--sunk); border-radius: 10px; padding: 3px; }
   .seg button { font-size: 15px; padding: 7px 13px; border-radius: 8px; color: var(--text-secondary); }
-  .seg button.on { background: var(--accent); color: var(--on-accent); font-weight: 600; }
-  .go { flex: none; height: 50px; border-radius: 16px; background: var(--accent); color: var(--on-accent); font-size: 20px; font-weight: 700; }
-  .go:disabled { opacity: 0.4; }
+  .seg button.on { background: var(--accent-face); box-shadow: var(--raise-sm); color: var(--on-accent); font-weight: 600; }
+  .go { flex: none; height: 50px; border-radius: 16px; background: var(--accent-face); box-shadow: var(--raise-accent); color: var(--on-accent); font-size: 20px; font-weight: 700; }
+  .go:active { transform: translateY(1px); box-shadow: var(--raise-sm); }
+  .go:disabled { opacity: 0.4; box-shadow: none; }
   .help { flex: none; padding: 0 16px; font-size: 15px; color: var(--text-secondary); }
   .help summary { padding: 14px 0; }
   .help ol { margin: 0; padding: 0 0 6px 20px; line-height: 1.6; }
@@ -145,7 +157,7 @@
   .help b { color: var(--text-primary); }
 
   /* 일반 계산기 */
-  .display { flex: 1; min-height: 96px; display: flex; flex-direction: column; justify-content: flex-end; text-align: right; padding: 0 8px; overflow: hidden; }
+  .display { flex: 1; min-height: 96px; display: flex; flex-direction: column; justify-content: flex-end; text-align: right; padding: 8px 14px 6px; overflow: hidden; background: var(--card); border-radius: 22px; box-shadow: var(--card-shadow); }
   .display .hclear { align-self: flex-start; flex: none; padding: 4px 10px; margin: 0 0 4px -4px; border-radius: 8px; font-size: 14px; color: var(--text-muted); }
   .display .hist { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; margin-bottom: 8px; }
   .display .hist div { font-size: 16px; line-height: 1.7; color: var(--text-muted); overflow-wrap: anywhere; }
@@ -153,42 +165,45 @@
   .display .hist div:active { color: var(--text-primary); }
   .display .expr { min-height: 24px; font-size: 19px; color: var(--text-muted); white-space: nowrap; overflow: hidden; }
   .display .value { flex: none; max-height: 132px; overflow-y: auto; overflow-wrap: anywhere; font-size: 64px; font-weight: 300; line-height: 1.2; }
-  .display .value::-webkit-scrollbar { display: none; }
+  .display .value::-webkit-scrollbar, .display .hist::-webkit-scrollbar { display: none; }
   .display .pre { flex: none; min-height: 26px; font-size: 20px; color: var(--text-muted); white-space: nowrap; overflow: hidden; }
   .display .pre.err { color: var(--danger); }
   .keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
   .keys button {
-    height: clamp(54px, 9.4dvh, 78px); border-radius: 18px;
-    font-size: 28px; background: var(--key); color: var(--text-primary);
+    height: clamp(54px, 9.4dvh, 78px); border-radius: 999px;
+    font-size: 28px; background: var(--key-face); box-shadow: var(--raise); color: var(--text-primary);
   }
-  .keys button.tool { height: 38px; background: none; font-size: 20px; color: var(--accent); }
+  .keys button.tool { height: 38px; background: none; box-shadow: none; font-size: 20px; color: var(--accent); }
   .keys button.fn { font-size: 26px; color: var(--accent); }
   .keys button.op { font-size: 32px; color: var(--accent); }
-  .keys button.eq { background: var(--accent); color: var(--on-accent); font-size: 32px; }
-  .keys button:active { filter: brightness(0.85); }
+  .keys button.eq { background: var(--accent-face); box-shadow: var(--raise-accent); color: var(--on-accent); font-size: 32px; }
+  .keys button:active { transform: translateY(1px); box-shadow: var(--raise-sm); filter: brightness(0.94); }
+  .keys button.tool:active { transform: none; box-shadow: none; filter: none; opacity: 0.5; }
 
   /* 공학용 함수 창 */
-  .sheet { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(0, 0, 0, 0.45); }
+  .sheet { position: fixed; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; padding: 20px; background: rgba(20, 30, 50, 0.22); }
   .sheet[hidden] { display: none; }
-  .sheet .panel { width: 100%; max-width: 340px; padding: 14px; }
+  .sheet .panel { width: 100%; max-width: 340px; padding: 14px; background: rgba(246, 248, 252, 0.72); border-radius: 28px; }
   .sheet .shead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
   .sheet .shead span { font-size: 17px; font-weight: 700; }
   .fgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .fgrid button { height: 44px; border-radius: 12px; background: var(--field); font-size: 19px; color: var(--accent); }
-  .fgrid button:active { filter: brightness(0.85); }
+  .fgrid button { height: 44px; border-radius: 12px; background: var(--key-face); box-shadow: var(--raise-sm); font-size: 19px; color: var(--accent); }
+  .fgrid button:active { transform: translateY(1px); filter: brightness(0.94); }
   .sheet .fclose { width: 100%; height: 44px; margin-top: 10px; border-radius: 12px; font-size: 17px; color: var(--text-secondary); }
 
   /* 아래 탭 */
+  /* 화면 위에 떠 있는 유리 캡슐. 도핑시계 목록은 이 밑으로 지나간다 */
   .tabs {
-    flex: none; display: flex;
-    background: var(--card); border-top: 1px solid var(--line);
-    padding: 6px calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 6px) calc(env(safe-area-inset-left) + 12px);
+    position: fixed; z-index: 5; display: flex; gap: 4px; padding: 4px;
+    left: calc(env(safe-area-inset-left) + 16px); right: calc(env(safe-area-inset-right) + 16px); bottom: var(--tab-bottom);
+    border-radius: 999px; background: rgba(255, 255, 255, 0.50); box-shadow: var(--raise);
+    -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
   }
-  .tabs button { flex: 1; height: 44px; font-size: 16px; color: var(--text-muted); border-radius: 12px; }
-  .tabs button.on { color: var(--accent); font-weight: 700; }
+  .tabs button { flex: 1; height: 48px; font-size: 16px; color: var(--text-secondary); border-radius: 999px; }
+  .tabs button.on { background: rgba(42, 120, 214, 0.13); color: var(--accent); font-weight: 700; }
 </style>
 </head>
-<body class="oncalc">
+<body>
 <main>
   <section class="view" id="view-doff" hidden>
     <div class="card result empty" id="result">
@@ -783,7 +798,6 @@ document.querySelector('.tabs').addEventListener('click', e => {
   document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('on', x === b));
   $('view-doff').hidden = b.dataset.view !== 'doff';
   $('view-calc').hidden = b.dataset.view !== 'calc';
-  document.body.classList.toggle('oncalc', b.dataset.view === 'calc');
   renderCalc();
 });
 
