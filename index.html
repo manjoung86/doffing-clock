@@ -272,12 +272,13 @@
       <p>그다음부터는 가동 목록의 <b>알람 18:35</b> 같은 버튼(도핑 5분 전 시각)을 누르면 시계 앱에 알람이 생깁니다. 삭제로 목록에서 지워도 맞춰 둔 알람은 남으니 시계 앱에서 지워 주세요.</p>
       </div>
       <div id="helpAndroid" hidden>
+      <!-- 안드로이드를 쓰는 직원들이 읽도록 네팔어로 적는다 (화면의 다른 글자는 한글 그대로) -->
       <ol>
-        <li>Play 스토어에서 <b>ntfy</b> 앱을 설치합니다. <a class="hbtn" href="https://play.google.com/store/apps/details?id=io.heckel.ntfy" target="_blank" rel="noopener">설치 화면 열기</a></li>
-        <li>설치한 뒤 <a class="hbtn" id="ntfyLink" href="#">알림 앱 연결</a> 을 누르면 ntfy 앱이 열리고 이 폰의 알림 주소가 등록됩니다. 알림을 허용할지 물으면 허용합니다.</li>
-        <li>이 화면으로 돌아와 <button type="button" class="hbtn" id="ntfyTest">시험 알림</button> 을 눌러 알림이 오는지 확인합니다.</li>
+        <li>Play Store बाट <b>ntfy</b> एप इन्स्टल गर्नुहोस्। <a class="hbtn" href="https://play.google.com/store/apps/details?id=io.heckel.ntfy" target="_blank" rel="noopener">इन्स्टल पेज खोल्नुहोस्</a></li>
+        <li>इन्स्टल गरेपछि <a class="hbtn" id="ntfyLink" href="#">अलार्म एप जोड्नुहोस्</a> थिच्नुहोस्। ntfy एप खुल्छ र यो फोनको अलार्म ठेगाना दर्ता हुन्छ। सूचना (알림) को अनुमति मागेमा <b>허용</b> थिच्नुहोस्।</li>
+        <li>यो एपमा फर्केर <button type="button" class="hbtn" id="ntfyTest">परीक्षण सूचना</button> थिच्नुहोस् र फोनमा सूचना आउँछ कि हेर्नुहोस्।</li>
       </ol>
-      <p>그다음부터는 가동 목록의 <b>알람 18:35</b> 같은 버튼(도핑 5분 전 시각)을 누르면 그 시각에 알림이 옵니다. 중량 점검으로 시각이 바뀌면 알림도 새 시각으로 다시 예약되고, 삭제하면 같이 취소됩니다. 폰 소리를 켜 두세요.</p>
+      <p>त्यसपछि तलको सूचीमा <b>알람 18:35</b> जस्तो बटन थिच्नुहोस्। यो 도핑 हुनुभन्दा ५ मिनेट अगाडिको समय हो। बटन <b>18:35 예약됨</b> भएपछि त्यही समयमा फोनमा सूचना आउँछ। <b>중량 점검</b> गरेर समय बदलियो भने सूचना पनि नयाँ समयमा आफैं सर्छ, र <b>삭제</b> थिचेपछि रद्द हुन्छ। फोनको आवाज खुला राख्नुहोस्। बटन थिच्दा इन्टरनेट चाहिन्छ।</p>
       <p id="ntfyStat"></p>
       </div>
     </details>
@@ -639,22 +640,25 @@ function ntfyAlarm(r) {
   if (!linked) {
     document.querySelector('.help').open = true;
     document.querySelector('.help').scrollIntoView();
-    alert('먼저 아래 "5분 전 알람 설정 방법"대로 알림 앱을 연결해 주세요.');
+    alert('먼저 아래 "5분 전 알람 설정 방법"대로 알림 앱을 연결해 주세요.\nपहिले तलको "अलार्म सेटिङ" अनुसार ntfy एप जोड्नुहोस्।');
     return;
   }
   ntfySend((r.name ? '[' + r.name + '] ' : '') + '도핑 5분 전', hm(new Date(r.endMs)) + ' 에 도핑하세요', at.getTime())
     .then(id => { if (!runs.includes(r)) return ntfyCancel(id); r.alarm = true; r.ntfyId = id; saveRuns(); tick(); })
-    .catch(() => alert('알림 예약에 실패했습니다. 인터넷 연결을 확인하고 다시 눌러 주세요.'));
+    .catch(() => alert('알림 예약에 실패했습니다. 인터넷 연결을 확인하고 다시 눌러 주세요.\nअलार्म राख्न सकिएन। इन्टरनेट जाँच गरेर फेरि थिच्नुहोस्।'));
 }
 $('helpIos').hidden = IS_ANDROID;
 $('helpAndroid').hidden = !IS_ANDROID;
-if (IS_ANDROID) $('ntfyLink').href = 'ntfy://ntfy.sh/' + ntfyTopic() + '?display=' + encodeURIComponent('도핑 알림');
+if (IS_ANDROID) {
+  $('ntfyLink').href = 'ntfy://ntfy.sh/' + ntfyTopic() + '?display=' + encodeURIComponent('도핑 알림');
+  document.querySelector('.help summary').textContent = '5분 전 알람 설정 방법 · अलार्म सेटिङ (पहिलो पटक एक चोटि)';
+}
 $('ntfyLink').addEventListener('click', () => { try { localStorage.setItem('doff.ntfy.linked', '1'); } catch (e) {} });
 $('ntfyTest').addEventListener('click', () => {
-  $('ntfyStat').textContent = '보내는 중…';
+  $('ntfyStat').textContent = 'पठाउँदै…';
   ntfySend('도핑 알림 시험', '이 알림이 보이면 설정이 끝난 것입니다.')
-    .then(() => { $('ntfyStat').textContent = '시험 알림을 보냈습니다. 폰에 알림이 오는지 확인하세요.'; })
-    .catch(() => { $('ntfyStat').textContent = '보내지 못했습니다. 인터넷 연결을 확인하세요.'; });
+    .then(() => { $('ntfyStat').textContent = 'परीक्षण सूचना पठाइयो। फोनमा सूचना आयो कि हेर्नुहोस्।'; })
+    .catch(() => { $('ntfyStat').textContent = 'पठाउन सकिएन। इन्टरनेट जाँच गर्नुहोस्।'; });
 });
 
 // ── 중량 점검 ──
